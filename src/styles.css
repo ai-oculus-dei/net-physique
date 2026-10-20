@@ -145,8 +145,13 @@ label.field > span { letter-spacing: 0.04em; }
 }
 .chip.on { background: color-mix(in srgb, var(--cyan) 16%, transparent); border-color: var(--cyan); color: var(--text); }
 
-.seg { display: inline-flex; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 2px; }
-.seg button { border: none; background: transparent; padding: 7px 12px; border-radius: 9px; color: var(--muted); font-size: 13px; }
+.seg { display: inline-flex; max-width: 100%; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 2px; }
+.seg button { border: none; background: transparent; padding: 7px 12px; border-radius: 9px; color: var(--muted); font-size: 13px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg.full { display: flex; width: 100%; }
+.seg.full button { flex: 1 1 0; padding: 7px 4px; }
+.seg.tabs button { flex-direction: column; gap: 3px; font-size: 11.5px; padding: 7px 2px; }
+.seg.tabs .ic { flex-direction: column; gap: 3px; }
+.seg.tabs .lucide { width: 18px; height: 18px; }
 .seg button.on { background: var(--card-solid); color: var(--text); box-shadow: 0 1px 0 var(--line-strong); }
 
 /* ---------- Navegación ---------- */
@@ -244,3 +249,7 @@ a { color: var(--cyan); }
 .body-map { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; text-align: center; }
 .body-map svg { width: 100% !important; height: auto !important; max-height: 340px; }
 .body-map path { transition: fill .4s ease; }
+
+/* Red de seguridad: nunca scroll horizontal de página ni de hojas */
+html, body { overflow-x: hidden; }
+.shell, .sheet { overflow-x: clip; }

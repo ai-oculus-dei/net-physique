@@ -130,9 +130,13 @@ export function Empty({ icon: Icon, children }: { icon: LucideIcon; children: Re
   return <div className="empty"><span className="big"><Icon size={30} strokeWidth={1.5} /></span>{children}</div>
 }
 
-export function Seg<T extends string>({ value, options, onChange }: { value: T; options: { id: T; label: ReactNode }[]; onChange: (v: T) => void }) {
+export function Seg<T extends string>({ value, options, onChange, variant }: {
+  value: T; options: { id: T; label: ReactNode }[]; onChange: (v: T) => void
+  /** full: ocupa todo el ancho · tabs: además icono encima de la etiqueta */
+  variant?: 'full' | 'tabs'
+}) {
   return (
-    <div className="seg">
+    <div className={`seg ${variant === 'tabs' ? 'full tabs' : variant ?? ''}`}>
       {options.map((o) => (
         <button key={o.id} className={o.id === value ? 'on' : ''} onClick={() => onChange(o.id)} type="button">{o.label}</button>
       ))}

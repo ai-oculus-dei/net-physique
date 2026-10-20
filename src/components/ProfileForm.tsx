@@ -81,7 +81,7 @@ export default function ProfileForm({ initial, onSubmit, submitLabel }: {
         </label>
         <div className="stack" style={{ gap: 6 }}>
           <span className="small muted">Modo de cálculo del gasto</span>
-          <Seg value={p.energy_mode ?? 'adaptive'} onChange={(v) => set('energy_mode', v)} options={MODES.map((m) => ({ ...m }))} />
+          <Seg variant="full" value={p.energy_mode ?? 'adaptive'} onChange={(v) => set('energy_mode', v)} options={MODES.map((m) => ({ ...m }))} />
           <span className="small faint">{MODE_HELP[p.energy_mode ?? 'adaptive']}</span>
         </div>
         {p.energy_mode !== 'dynamic' && (

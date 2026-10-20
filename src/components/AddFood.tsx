@@ -27,7 +27,7 @@ export default function AddFood({ open, meal, day, onClose, onSaved }: {
           onBack={() => setPicked(null)} onSaved={onSaved} />
       ) : (
         <div className="stack">
-          <Seg value={tab} onChange={setTab} options={[
+          <Seg variant="tabs" value={tab} onChange={setTab} options={[
             { id: 'history', label: <span className="ic"><History size={14} /> Histórico</span> },
             { id: 'scan', label: <span className="ic"><ScanBarcode size={14} /> Escanear</span> },
             { id: 'search', label: <span className="ic"><Search size={14} /> Buscar</span> },
@@ -125,7 +125,7 @@ function HistoryTab({ onPick }: { onPick: (p: Product, g?: number) => void }) {
   )
 }
 
-function ManualTab({ onPick }: { onPick: (p: Product) => void }) {
+export function ManualTab({ onPick }: { onPick: (p: Product) => void }) {
   const [v, setV] = useState<Record<string, string>>({})
   const s = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setV((o) => ({ ...o, [k]: e.target.value }))
   async function save(e: React.FormEvent) {
@@ -165,7 +165,7 @@ function nowTime() {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, onSaved }: {
+export function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, onSaved }: {
   product: Product; meal: Meal; day: string; defaultGrams: number | null; onBack: () => void; onSaved: () => void
 }) {
   const [grams, setGrams] = useState(String(defaultGrams ?? product.serving_g ?? 100))
