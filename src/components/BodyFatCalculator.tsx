@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { num, r1, toast } from './ui'
+import { decimalText, num, r1, toast } from './ui'
 import { ageFromBirthdate, navyBodyFat, skinfoldBodyFat } from '../lib/formulas'
 import { supabase } from '../lib/supabase'
 import { ymd } from '../lib/dates'
@@ -20,7 +20,7 @@ export default function BodyFatCalculator({ onSaved }: { onSaved: () => void }) 
   const sex = profile.sex ?? 'male'
   const [method, setMethod] = useState<Method>('navy')
   const [v, setV] = useState<Record<string, string>>({})
-  const s = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setV((o) => ({ ...o, [k]: e.target.value }))
+  const s = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setV((o) => ({ ...o, [k]: decimalText(e.target.value) }))
   const age = profile.birthdate ? ageFromBirthdate(profile.birthdate) : 30
   const height = Number(profile.height_cm ?? 170)
 

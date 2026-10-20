@@ -1,7 +1,7 @@
 import { History, Package, PenLine, ScanBarcode, Search, SearchX, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import BarcodeScanner from './BarcodeScanner'
-import { Empty, Seg, Sheet, num, r0, r1, toast } from './ui'
+import { decimalText, Empty, Seg, Sheet, num, r0, r1, toast } from './ui'
 import { ensureCached, lookupBarcode, macrosFor, recentProducts, saveManualProduct, searchProducts } from '../lib/food'
 import { ymd } from '../lib/dates'
 import { supabase } from '../lib/supabase'
@@ -128,6 +128,8 @@ function HistoryTab({ onPick }: { onPick: (p: Product, g?: number) => void }) {
 export function ManualTab({ onPick }: { onPick: (p: Product) => void }) {
   const [v, setV] = useState<Record<string, string>>({})
   const s = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setV((o) => ({ ...o, [k]: e.target.value }))
+  // campos numéricos: coma → punto
+  const sd = (k: string, decimal = true) => (e: React.ChangeEvent<HTMLInputElement>) => setV((o) => ({ ...o, [k]: decimalText(e.target.value, { decimal }) }))
   async function save(e: React.FormEvent) {
     e.preventDefault()
     try {
@@ -145,16 +147,16 @@ export function ManualTab({ onPick }: { onPick: (p: Product) => void }) {
       <label className="field"><span>Nombre *</span><input required value={v.name ?? ''} onChange={s('name')} /></label>
       <div className="grid2">
         <label className="field"><span>Marca</span><input value={v.brand ?? ''} onChange={s('brand')} /></label>
-        <label className="field"><span>Código de barras</span><input inputMode="numeric" value={v.barcode ?? ''} onChange={s('barcode')} /></label>
+        <label className="field"><span>Código de barras</span><input inputMode="numeric" value={v.barcode ?? ''} onChange={sd('barcode', false)} /></label>
       </div>
       <span className="tiny muted">Valores por 100 g</span>
       <div className="grid2">
-        <label className="field"><span>kcal *</span><input required inputMode="decimal" value={v.kcal ?? ''} onChange={s('kcal')} /></label>
-        <label className="field"><span>Proteína g</span><input inputMode="decimal" value={v.protein ?? ''} onChange={s('protein')} /></label>
-        <label className="field"><span>Carbohidratos g</span><input inputMode="decimal" value={v.carbs ?? ''} onChange={s('carbs')} /></label>
-        <label className="field"><span>Grasas g</span><input inputMode="decimal" value={v.fat ?? ''} onChange={s('fat')} /></label>
+        <label className="field"><span>kcal *</span><input required inputMode="decimal" value={v.kcal ?? ''} onChange={sd('kcal')} /></label>
+        <label className="field"><span>Proteína g</span><input inputMode="decimal" value={v.protein ?? ''} onChange={sd('protein')} /></label>
+        <label className="field"><span>Carbohidratos g</span><input inputMode="decimal" value={v.carbs ?? ''} onChange={sd('carbs')} /></label>
+        <label className="field"><span>Grasas g</span><input inputMode="decimal" value={v.fat ?? ''} onChange={sd('fat')} /></label>
       </div>
-      <label className="field"><span>Ración habitual (g)</span><input inputMode="decimal" value={v.serving ?? ''} onChange={s('serving')} /></label>
+      <label className="field"><span>Ración habitual (g)</span><input inputMode="decimal" value={v.serving ?? ''} onChange={sd('serving')} /></label>
       <button className="btn-primary">Guardar producto</button>
     </form>
   )
@@ -199,7 +201,7 @@ export function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, o
       </div>
       <div className="grid3">
         <label className="field" style={{ gridColumn: 'span 2' }}><span>Cantidad (g)</span>
-          <input className="mono" inputMode="decimal" value={grams} onChange={(e) => setGrams(e.target.value)} autoFocus />
+          <input className="mono" inputMode="decimal" value={grams} onChange={(e) => setGrams(decimalText(e.target.value))} autoFocus />
         </label>
         <label className="field"><span>Hora</span><input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></label>
       </div>

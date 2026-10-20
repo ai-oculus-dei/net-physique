@@ -146,4 +146,41 @@ export function Seg<T extends string>({ value, options, onChange, variant }: {
 
 export const r0 = (n: number | null | undefined) => Math.round(Number(n ?? 0))
 export const r1 = (n: number | null | undefined) => Math.round(Number(n ?? 0) * 10) / 10
-export const num = (s: string) => (s.trim() === '' ? null : Number(s.replace(',', '.')))
+/** Texto → número aceptando coma o punto decimal; vacío o inválido → null */
+export const num = (s: string) => {
+  const t = s.trim().replace(/,/g, '.')
+  if (t === '' || t === '.' || t === '-') return null
+  const n = Number(t)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Normaliza lo tecleado: la coma del teclado (iOS en español) pasa a punto y solo queda un separador */
+export function decimalText(s: string, { decimal = true, negative = false } = {}) {
+  let t = s.replace(/,/g, '.').replace(negative ? /[^\d.-]/g : /[^\d.]/g, '')
+  if (negative) t = (t.startsWith('-') ? '-' : '') + t.replace(/-/g, '')
+  if (!decimal) return t.replace(/\./g, '')
+  const i = t.indexOf('.')
+  return i < 0 ? t : t.slice(0, i + 1) + t.slice(i + 1).replace(/\./g, '')
+}
+
+/**
+ * Campo numérico: guarda el texto mientras se escribe (para no perder "80." a medias)
+ * y emite el número ya convertido. decimal=false para enteros (pasos, series…).
+ */
+export function NumInput({ value, onChange, decimal = true, negative = false, ...rest }: {
+  value: number | null | undefined
+  onChange: (n: number | null) => void
+  decimal?: boolean
+  negative?: boolean
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>) {
+  const [text, setText] = useState(value == null ? '' : String(value))
+  // Si el valor cambia desde fuera (otro control), se refleja en el texto
+  useEffect(() => {
+    if (num(text) !== (value ?? null)) setText(value == null ? '' : String(value))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+  return (
+    <input {...rest} inputMode={rest.inputMode ?? (decimal ? 'decimal' : 'numeric')} value={text}
+      onChange={(e) => { const t = decimalText(e.target.value, { decimal, negative }); setText(t); onChange(num(t)) }} />
+  )
+}

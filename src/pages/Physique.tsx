@@ -4,7 +4,7 @@ import BodyFatCalculator from '../components/BodyFatCalculator'
 import ComplianceCalendar from '../components/ComplianceCalendar'
 import ProgressPhotos from '../components/ProgressPhotos'
 import WeightChart, { weeklyAverages, type WeightRow } from '../components/WeightChart'
-import { Seg, Sheet, num, r1, toast } from '../components/ui'
+import { decimalText, Seg, Sheet, num, r1, toast } from '../components/ui'
 import { addDays, fmtDay, weekStart, ymd } from '../lib/dates'
 import { supabase } from '../lib/supabase'
 import { useDayEnergy } from '../lib/useDayEnergy'
@@ -87,7 +87,7 @@ export default function Physique() {
           </div>
           {!stats.today && (
             <div className="row" style={{ marginTop: 12 }}>
-              <input className="mono grow" inputMode="decimal" placeholder="Peso en ayunas de hoy" value={kgInput} onChange={(e) => setKgInput(e.target.value)} />
+              <input className="mono grow" inputMode="decimal" placeholder="Peso en ayunas de hoy" value={kgInput} onChange={(e) => setKgInput(decimalText(e.target.value))} />
               <button className="btn-primary" onClick={saveWeight}>Guardar</button>
             </div>
           )}

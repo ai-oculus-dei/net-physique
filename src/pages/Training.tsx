@@ -4,7 +4,7 @@ import BodyHeatmap from '../components/BodyHeatmap'
 import DayPicker from '../components/DayPicker'
 import ExercisePicker, { ExerciseDetail } from '../components/ExercisePicker'
 import WorkoutEditor from '../components/WorkoutEditor'
-import { Bar, Empty, Sheet, num, r0, toast } from '../components/ui'
+import { decimalText, Bar, Empty, Sheet, num, r0, toast } from '../components/ui'
 import { latestWeight } from '../lib/energy'
 import { fmtDay, ymd } from '../lib/dates'
 import { stepsKcal } from '../lib/formulas'
@@ -81,7 +81,7 @@ export default function Training() {
         <div className="card">
           <h2><Footprints size={14} /> Pasos</h2>
           <div className="row">
-            <input className="mono grow" inputMode="numeric" placeholder="0" value={steps} onChange={(e) => setSteps(e.target.value)} />
+            <input className="mono grow" inputMode="numeric" placeholder="0" value={steps} onChange={(e) => setSteps(decimalText(e.target.value, { decimal: false }))} />
             <button className="btn-primary" onClick={saveSteps}>Guardar</button>
           </div>
           <div style={{ marginTop: 10 }}><Bar value={stepsN} max={profile.steps_goal} color="var(--lime)" /></div>

@@ -2,7 +2,7 @@ import { Target, User, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { ACTIVITY_FACTORS, ageFromBirthdate, bmr, macroTargets } from '../lib/formulas'
 import type { Profile } from '../lib/types'
-import { Seg, num, r0 } from './ui'
+import { NumInput, Seg, r0 } from './ui'
 
 const ACTIVITY_LABELS = ['Sedentario', 'Ligero', 'Moderado', 'Alto', 'Muy alto']
 const MODES = [
@@ -59,13 +59,13 @@ export default function ProfileForm({ initial, onSubmit, submitLabel }: {
         </div>
         <div className="grid3">
           <label className="field"><span>Peso (kg)</span>
-            <input inputMode="decimal" required value={n('weight_kg')} onChange={(e) => set('weight_kg', num(e.target.value))} />
+            <NumInput required value={p.weight_kg} onChange={(v) => set('weight_kg', v)} />
           </label>
           <label className="field"><span>Altura (cm)</span>
-            <input inputMode="decimal" required value={n('height_cm')} onChange={(e) => set('height_cm', num(e.target.value))} />
+            <NumInput required value={p.height_cm} onChange={(v) => set('height_cm', v)} />
           </label>
           <label className="field"><span>Peso objetivo</span>
-            <input inputMode="decimal" value={n('goal_weight_kg')} onChange={(e) => set('goal_weight_kg', num(e.target.value))} />
+            <NumInput value={p.goal_weight_kg} onChange={(v) => set('goal_weight_kg', v)} />
           </label>
         </div>
         <label className="field"><span>Fecha de nacimiento</span>
@@ -86,11 +86,11 @@ export default function ProfileForm({ initial, onSubmit, submitLabel }: {
         </div>
         {p.energy_mode !== 'dynamic' && (
           <label className="field"><span>Factor actual</span>
-            <input inputMode="decimal" value={n('activity_factor')} onChange={(e) => set('activity_factor', num(e.target.value))} />
+            <NumInput value={p.activity_factor} onChange={(v) => set('activity_factor', v)} />
           </label>
         )}
         <label className="field"><span>Objetivo de pasos diarios</span>
-          <input inputMode="numeric" value={n('steps_goal')} onChange={(e) => set('steps_goal', num(e.target.value))} />
+          <NumInput decimal={false} value={p.steps_goal} onChange={(v) => set('steps_goal', v)} />
         </label>
       </div>
 
@@ -98,22 +98,22 @@ export default function ProfileForm({ initial, onSubmit, submitLabel }: {
         <h2><Target size={14} /> Objetivos</h2>
         <div className="grid3">
           <label className="field"><span>Proteína g/kg</span>
-            <input inputMode="decimal" value={n('protein_g_kg')} onChange={(e) => set('protein_g_kg', num(e.target.value))} />
+            <NumInput value={p.protein_g_kg} onChange={(v) => set('protein_g_kg', v)} />
           </label>
           <label className="field"><span>Grasa g/kg</span>
-            <input inputMode="decimal" value={n('fat_g_kg')} onChange={(e) => set('fat_g_kg', num(e.target.value))} />
+            <NumInput value={p.fat_g_kg} onChange={(v) => set('fat_g_kg', v)} />
           </label>
           <label className="field"><span>Déficit kcal</span>
-            <input inputMode="numeric" value={n('deficit_kcal')} onChange={(e) => set('deficit_kcal', num(e.target.value))} />
+            <NumInput decimal={false} negative inputMode="text" value={p.deficit_kcal} onChange={(v) => set('deficit_kcal', v)} />
           </label>
         </div>
         <span className="small faint">Carbohidratos = kcal restantes ÷ 4. Un déficit negativo = superávit.</span>
         <div className="grid2">
           <label className="field"><span>Tolerancia kcal (±%)</span>
-            <input inputMode="numeric" value={n('kcal_tolerance_pct')} onChange={(e) => set('kcal_tolerance_pct', num(e.target.value))} />
+            <NumInput decimal={false} value={p.kcal_tolerance_pct} onChange={(v) => set('kcal_tolerance_pct', v)} />
           </label>
           <label className="field"><span>Proteína mínima (%)</span>
-            <input inputMode="numeric" value={n('protein_min_pct')} onChange={(e) => set('protein_min_pct', num(e.target.value))} />
+            <NumInput decimal={false} value={p.protein_min_pct} onChange={(v) => set('protein_min_pct', v)} />
           </label>
         </div>
         {preview && (

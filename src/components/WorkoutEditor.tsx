@@ -2,7 +2,7 @@ import { Flame, Info, ListChecks, Plus, Timer, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import BodyHeatmap from './BodyHeatmap'
 import ExercisePicker, { ExerciseDetail } from './ExercisePicker'
-import { Seg, Sheet, num, r0, toast } from './ui'
+import { Seg, Sheet, NumInput, r0, toast } from './ui'
 import { workoutKcal } from '../lib/energy'
 import { epley1rm } from '../lib/formulas'
 import { muscleEs, muscleLoad } from '../lib/muscles'
@@ -69,8 +69,8 @@ export default function WorkoutEditor({ draft: initial, weekLoad, kg, onClose, o
           <Seg value={d.intensity} onChange={(v) => setD({ ...d, intensity: v })}
             options={[{ id: 'light', label: 'Suave' }, { id: 'moderate', label: 'Media' }, { id: 'vigorous', label: 'Intensa' }]} />
           <label className="row small muted" style={{ gap: 6 }}><Timer size={16} />
-            <input style={{ width: 70 }} inputMode="numeric" placeholder="min" value={d.duration_min ?? ''}
-              onChange={(e) => setD({ ...d, duration_min: num(e.target.value) })} />
+            <NumInput style={{ width: 70 }} decimal={false} placeholder="min" value={d.duration_min}
+              onChange={(v) => setD({ ...d, duration_min: v })} />
           </label>
         </div>
 
@@ -95,16 +95,16 @@ export default function WorkoutEditor({ draft: initial, weekLoad, kg, onClose, o
                 <div className="grid3" style={{ marginTop: 8 }}>
                   {cardio ? (
                     <label className="field" style={{ gridColumn: 'span 3' }}><span>Minutos</span>
-                      <input inputMode="numeric" value={s.minutes ?? ''} onChange={(e) => setItem(i, { minutes: num(e.target.value) })} />
+                      <NumInput value={s.minutes} onChange={(v) => setItem(i, { minutes: v })} />
                     </label>
                   ) : (
                     <>
                       <label className="field"><span>Series</span>
-                        <input inputMode="numeric" value={s.sets} onChange={(e) => setItem(i, { sets: num(e.target.value) ?? 0 })} /></label>
+                        <NumInput decimal={false} value={s.sets} onChange={(v) => setItem(i, { sets: v ?? 0 })} /></label>
                       <label className="field"><span>Reps</span>
-                        <input inputMode="numeric" value={s.reps} onChange={(e) => setItem(i, { reps: num(e.target.value) ?? 0 })} /></label>
+                        <NumInput decimal={false} value={s.reps} onChange={(v) => setItem(i, { reps: v ?? 0 })} /></label>
                       <label className="field"><span>Peso kg</span>
-                        <input inputMode="decimal" value={s.weight_kg ?? ''} placeholder="—" onChange={(e) => setItem(i, { weight_kg: num(e.target.value) })} /></label>
+                        <NumInput value={s.weight_kg} placeholder="—" onChange={(v) => setItem(i, { weight_kg: v })} /></label>
                     </>
                   )}
                 </div>

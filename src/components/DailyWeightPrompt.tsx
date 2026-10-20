@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { ymd } from '../lib/dates'
 import { useApp } from '../stores/app'
-import { Sheet, num, toast } from './ui'
+import { Sheet, decimalText, num, toast } from './ui'
 
 const SKIP_KEY = 'np-weight-skip'
 
@@ -40,7 +40,7 @@ export default function DailyWeightPrompt() {
       <div className="stack">
         <p className="muted small" style={{ margin: 0 }}>Después de ir al baño y antes de comer o beber. Se usa la media semanal como referencia.</p>
         <input className="mono" style={{ fontSize: 28, textAlign: 'center' }} inputMode="decimal" autoFocus
-          value={kg} onChange={(e) => setKg(e.target.value)} placeholder="00.0" />
+          value={kg} onChange={(e) => setKg(decimalText(e.target.value))} placeholder="00.0" />
         <div className="grid2">
           <button className="btn-ghost" onClick={close}>Hoy no</button>
           <button className="btn-primary" onClick={save}>Guardar</button>
