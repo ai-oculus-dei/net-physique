@@ -1,0 +1,102 @@
+import type { EnergyMode, Sex } from './formulas'
+
+export type Meal = 'desayuno' | 'almuerzo' | 'picoteo' | 'comida' | 'merienda' | 'cena'
+export const MEALS: { id: Meal; label: string; emoji: string }[] = [
+  { id: 'desayuno', label: 'Desayuno', emoji: '🥐' },
+  { id: 'almuerzo', label: 'Almuerzo', emoji: '🥪' },
+  { id: 'picoteo', label: 'Picoteo', emoji: '🥜' },
+  { id: 'comida', label: 'Comida', emoji: '🍝' },
+  { id: 'merienda', label: 'Merienda', emoji: '🍎' },
+  { id: 'cena', label: 'Cena', emoji: '🌙' },
+]
+
+export interface Profile {
+  id: string
+  display_name: string | null
+  sex: Sex | null
+  birthdate: string | null
+  height_cm: number | null
+  weight_kg: number | null
+  activity_level: number
+  energy_mode: EnergyMode
+  activity_factor: number
+  protein_g_kg: number
+  fat_g_kg: number
+  deficit_kcal: number
+  goal_weight_kg: number | null
+  theme: 'dark' | 'light'
+  kcal_tolerance_pct: number
+  protein_min_pct: number
+  steps_goal: number
+  onboarded: boolean
+}
+
+export interface Product {
+  barcode: string
+  name: string
+  brand: string | null
+  image_url: string | null
+  kcal_100g: number | null
+  protein_100g: number | null
+  carbs_100g: number | null
+  sugars_100g?: number | null
+  fat_100g: number | null
+  fiber_100g?: number | null
+  salt_100g?: number | null
+  serving_g: number | null
+  source?: string
+}
+
+export interface FoodLog {
+  id: number
+  eaten_at: string
+  day: string
+  meal: Meal
+  barcode: string | null
+  name: string
+  grams: number
+  kcal: number
+  protein: number
+  carbs: number
+  fat: number
+}
+
+export interface Exercise {
+  id: string
+  name: string
+  force: string | null
+  level: string | null
+  mechanic: string | null
+  equipment: string | null
+  primary_muscles: string[]
+  secondary_muscles: string[]
+  instructions: string[]
+  category: string | null
+  images: string[]
+  is_custom: boolean
+}
+
+export interface WorkoutSet {
+  id?: number
+  workout_id?: number
+  exercise_id: string
+  position: number
+  sets: number
+  reps: number
+  weight_kg: number | null
+  minutes: number | null
+  done: boolean
+  exercise: Exercise
+}
+
+export interface Workout {
+  id: number
+  day: string
+  title: string | null
+  duration_min: number | null
+  intensity: 'light' | 'moderate' | 'vigorous'
+  kcal: number
+  planned: boolean
+  notes: string | null
+  workout_sets: WorkoutSet[]
+}
