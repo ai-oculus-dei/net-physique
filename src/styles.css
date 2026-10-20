@@ -54,7 +54,9 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+/* manipulation: sin zoom por doble toque, pero se mantiene el pellizco con dos dedos */
+html, body { margin: 0; padding: 0; touch-action: manipulation; }
+*, *::before, *::after { touch-action: manipulation; }
 body {
   background: var(--bg);
   background-image:
@@ -121,6 +123,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 input, select, textarea {
   font: inherit; color: var(--text); background: var(--bg-2); border: 1px solid var(--line-strong);
   border-radius: 12px; padding: 10px 12px; width: 100%; min-width: 0; outline: none;
+  font-size: max(16px, 1em); /* iOS hace zoom al enfocar campos de menos de 16px */
 }
 input:focus, select:focus, textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cyan) 18%, transparent); }
 input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--cyan); padding: 0; }
