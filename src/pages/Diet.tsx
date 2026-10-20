@@ -1,3 +1,4 @@
+import { Beef, ChartNoAxesColumn, Droplet, Dumbbell, Flame, Footprints, Plus, Salad, ScanBarcode, Utensils, Wheat, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import AddFood from '../components/AddFood'
 import DayPicker from '../components/DayPicker'
@@ -41,21 +42,21 @@ export default function Diet() {
 
   async function remove(id: number) {
     await supabase.from('food_logs').delete().eq('id', id)
-    toast('🗑️ Eliminado')
+    toast('Eliminado')
     load()
   }
 
   const macros = [
-    { k: 'protein' as const, label: 'Proteína', color: 'var(--protein)', emoji: '🥩' },
-    { k: 'carbs' as const, label: 'Carbohidratos', color: 'var(--carbs)', emoji: '🍚' },
-    { k: 'fat' as const, label: 'Grasas', color: 'var(--fat)', emoji: '🥑' },
+    { k: 'protein' as const, label: 'Proteína', color: 'var(--protein)', icon: Beef },
+    { k: 'carbs' as const, label: 'Carbohidratos', color: 'var(--carbs)', icon: Wheat },
+    { k: 'fat' as const, label: 'Grasas', color: 'var(--fat)', icon: Droplet },
   ]
 
   return (
     <div className="shell">
       <div className="topbar">
         <div>
-          <h1>🥗 Diet</h1>
+          <h1><Salad size={22} /> Diet</h1>
           <div className="sub">{energy ? `TDEE ${r0(energy.tdee)} · déficit ${r0(energy.tdee - energy.kcal)}` : '…'}</div>
         </div>
         <DayPicker day={day} onChange={setDay} />
@@ -64,7 +65,7 @@ export default function Diet() {
       <div className="stack">
         {/* Resumen calorías */}
         <div className="card glow">
-          <h2>🔥 Calorías consumidas / objetivo</h2>
+          <h2><Flame size={14} /> Calorías consumidas / objetivo</h2>
           <div className="row" style={{ gap: 18 }}>
             <Ring value={total.kcal} max={target} size={150}>
               <span className="mono" style={{ fontSize: 26, fontWeight: 600 }}>{r0(pct)}<span className="muted" style={{ fontSize: 14 }}>%</span></span>
@@ -80,8 +81,10 @@ export default function Diet() {
                 <span className="l">{left >= 0 ? 'restantes' : 'excedidas'}</span>
               </div>
               {energy && (
-                <div className="small muted mono">
-                  basal {r0(energy.bmr)}{energy.factorUsed ? ` ×${energy.factorUsed}` : ''} · 👟 {r0(energy.stepsKcal)} · 🏋️ {r0(energy.trainingKcal)}
+                <div className="small muted mono row wrap" style={{ gap: 8 }}>
+                  <span>basal {r0(energy.bmr)}{energy.factorUsed ? ` ×${energy.factorUsed}` : ''}</span>
+                  <span className="ic"><Footprints size={12} /> {r0(energy.stepsKcal)}</span>
+                  <span className="ic"><Dumbbell size={12} /> {r0(energy.trainingKcal)}</span>
                 </div>
               )}
             </div>
@@ -90,7 +93,7 @@ export default function Diet() {
 
         {/* Macros */}
         <div className="card">
-          <h2>📊 Macronutrientes</h2>
+          <h2><ChartNoAxesColumn size={14} /> Macronutrientes</h2>
           <div className="stack" style={{ gap: 14 }}>
             {macros.map((m) => {
               const t = energy?.[m.k] ?? 0
@@ -98,7 +101,7 @@ export default function Diet() {
               return (
                 <div key={m.k} className="stack" style={{ gap: 6 }}>
                   <div className="row between small">
-                    <span>{m.emoji} {m.label}</span>
+                    <span className="ic"><m.icon size={15} color={m.color} /> {m.label}</span>
                     <span className="mono"><b>{r0(v)}</b><span className="muted"> / {r0(t)} g · {t ? r0((v / t) * 100) : 0}%</span></span>
                   </div>
                   <Bar value={v} max={t} color={m.color} />
@@ -115,8 +118,8 @@ export default function Diet() {
           return (
             <div key={m.id} className="card">
               <div className="row between">
-                <h2 style={{ margin: 0 }}>{m.emoji} {m.label} {kcal > 0 && <span className="mono" style={{ color: 'var(--text)' }}>· {r0(kcal)} kcal</span>}</h2>
-                <button className="btn-sm btn-ghost" onClick={() => setAdding(m.id)}>＋</button>
+                <h2 style={{ margin: 0 }}><m.icon size={14} /> {m.label} {kcal > 0 && <span className="mono" style={{ color: 'var(--text)' }}>· {r0(kcal)} kcal</span>}</h2>
+                <button className="btn-icon btn-ghost" onClick={() => setAdding(m.id)} aria-label="Añadir"><Plus size={18} /></button>
               </div>
               {items.length > 0 && (
                 <div className="list" style={{ marginTop: 6 }}>
@@ -127,7 +130,7 @@ export default function Diet() {
                         <div className="small muted mono">{hhmm(l.eaten_at)} · {r0(l.grams)} g · P{r0(l.protein)} C{r0(l.carbs)} G{r0(l.fat)}</div>
                       </div>
                       <span className="mono">{r0(l.kcal)}</span>
-                      <button className="btn-icon btn-ghost" onClick={() => remove(l.id)} aria-label="Eliminar">✕</button>
+                      <button className="btn-icon btn-ghost" onClick={() => remove(l.id)} aria-label="Eliminar"><X size={16} /></button>
                     </div>
                   ))}
                 </div>
@@ -135,12 +138,12 @@ export default function Diet() {
             </div>
           )
         })}
-        {logs.length === 0 && <Empty emoji="🍽️">Nada registrado este día. Pulsa ＋ en una comida.</Empty>}
+        {logs.length === 0 && <Empty icon={Utensils}>Nada registrado este día. Pulsa + en una comida.</Empty>}
       </div>
 
       <button className="btn-primary" onClick={() => setAdding(mealForNow())}
         style={{ position: 'fixed', right: 18, bottom: 'calc(96px + env(safe-area-inset-bottom))', borderRadius: 18, padding: '14px 18px', zIndex: 30, boxShadow: 'var(--glow)' }}>
-        📷 Añadir
+        <ScanBarcode size={18} /> Añadir
       </button>
 
       <AddFood open={adding !== null} meal={adding ?? 'comida'} day={day}

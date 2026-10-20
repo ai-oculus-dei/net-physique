@@ -54,9 +54,9 @@
 }
 
 * { box-sizing: border-box; }
-/* manipulation: sin zoom por doble toque, pero se mantiene el pellizco con dos dedos */
-html, body { margin: 0; padding: 0; touch-action: manipulation; }
-*, *::before, *::after { touch-action: manipulation; }
+/* Sin zoom: ni doble toque ni pellizco (solo desplazamiento) */
+html, body { margin: 0; padding: 0; touch-action: pan-x pan-y; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+*, *::before, *::after { touch-action: pan-x pan-y; }
 body {
   background: var(--bg);
   background-image:
@@ -187,11 +187,15 @@ label.field > span { letter-spacing: 0.04em; }
   border-radius: 22px 22px 0 0; border: 1px solid var(--line-strong); border-bottom: none;
   padding: 18px 16px calc(20px + env(safe-area-inset-bottom)); animation: up .22s cubic-bezier(.2,.8,.2,1);
 }
-.sheet .grab { width: 40px; height: 4px; border-radius: 9px; background: var(--line-strong); margin: -6px auto 12px; }
+.sheet { transition: transform .2s ease; }
+.sheet-head { position: sticky; top: -18px; z-index: 2; background: var(--card-solid); margin: -18px -16px 12px; padding: 12px 16px 10px; touch-action: none; border-radius: 22px 22px 0 0; }
+.sheet .grab { width: 44px; height: 5px; border-radius: 9px; background: var(--line-strong); margin: 0 auto 10px; }
 @media (min-width: 720px) { .sheet-backdrop { align-items: center; } .sheet { border-radius: 22px; border-bottom: 1px solid var(--line-strong); } }
 @keyframes up { from { transform: translateY(30px); opacity: 0; } }
 @keyframes fade { from { opacity: 0; } }
 
+.toast { display: flex; align-items: center; gap: 8px; }
+.toast.ok svg { color: var(--ok); } .toast.err svg { color: var(--bad); }
 .toast { position: fixed; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 80; background: var(--card-solid); border: 1px solid var(--line-strong); padding: 10px 16px; border-radius: 12px; box-shadow: var(--glow); font-size: 14px; animation: fade .2s; }
 
 /* ---------- Escáner ---------- */
@@ -224,3 +228,14 @@ label.field > span { letter-spacing: 0.04em; }
 @keyframes rot { to { transform: rotate(360deg); } }
 .divider { height: 1px; background: var(--line); margin: 4px 0; }
 a { color: var(--cyan); }
+
+/* ---------- Iconos (lucide) ---------- */
+.lucide { flex-shrink: 0; stroke-width: 1.75; }
+.card h2 .lucide { color: var(--cyan); }
+.topbar h1 .lucide { color: var(--cyan); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--cyan) 45%, transparent)); }
+.empty .big { color: var(--faint); display: flex; justify-content: center; }
+.ic { display: inline-flex; align-items: center; gap: 6px; }
+.bottomnav a .ico { display: flex; filter: none; }
+.bottomnav a.active .ico { color: var(--cyan); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--cyan) 55%, transparent)); }
+.thumb .lucide { color: var(--faint); }
+.chip .lucide, .seg .lucide, button .lucide { opacity: .9; }

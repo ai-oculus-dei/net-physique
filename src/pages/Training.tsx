@@ -1,3 +1,4 @@
+import { BookOpen, CalendarClock, CircleCheck, Dumbbell, Flame, Footprints, Plus, Repeat, Sofa } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import BodyHeatmap from '../components/BodyHeatmap'
 import DayPicker from '../components/DayPicker'
@@ -44,7 +45,7 @@ export default function Training() {
     if (n == null) return
     const kcal = Math.round(stepsKcal(n, kg, Number(profile.height_cm ?? 170)))
     const { error } = await supabase.from('steps').upsert({ day, steps: n, kcal })
-    toast(error ? '⚠️ ' + error.message : `👟 ${n} pasos · ${kcal} kcal`)
+    error ? toast.err(error.message) : toast(`${n} pasos · ${kcal} kcal`)
   }
 
   // Marcar ejercicio hecho directamente desde la lista (plan → registro)
@@ -62,7 +63,7 @@ export default function Training() {
     <div className="shell">
       <div className="topbar">
         <div>
-          <h1>🏋️ Training</h1>
+          <h1><Dumbbell size={22} /> Training</h1>
           <div className="sub">{r0(totalSets)} series esta semana · {r0(kg)} kg</div>
         </div>
         <DayPicker day={day} onChange={setDay} allowFuture />
@@ -71,14 +72,14 @@ export default function Training() {
       <div className="stack">
         <div className="card glow">
           <div className="row between">
-            <h2 style={{ margin: 0 }}>🔥 Mapa de calor semanal</h2>
+            <h2 style={{ margin: 0 }}><Flame size={14} /> Mapa de calor semanal</h2>
             <span className="tiny faint">toca un músculo</span>
           </div>
           <BodyHeatmap load={load7} onPick={(m) => setBrowse(m)} />
         </div>
 
         <div className="card">
-          <h2>👟 Pasos</h2>
+          <h2><Footprints size={14} /> Pasos</h2>
           <div className="row">
             <input className="mono grow" inputMode="numeric" placeholder="0" value={steps} onChange={(e) => setSteps(e.target.value)} />
             <button className="btn-primary" onClick={saveSteps}>Guardar</button>
@@ -93,19 +94,19 @@ export default function Training() {
         <div className="row between">
           <h2 className="tiny muted" style={{ margin: 0 }}>Sesiones · {fmtDay(day)}</h2>
           <div className="row" style={{ gap: 6 }}>
-            <button className="btn-sm" onClick={() => setBrowse(null)}>📚 Catálogo</button>
-            <button className="btn-sm btn-primary" onClick={() => setDraft(newDraft())}>＋ Sesión</button>
+            <button className="btn-sm" onClick={() => setBrowse(null)}><BookOpen size={15} /> Catálogo</button>
+            <button className="btn-sm btn-primary" onClick={() => setDraft(newDraft())}><Plus size={15} /> Sesión</button>
           </div>
         </div>
 
-        {today.length === 0 && <Empty emoji="🛋️">Sin sesiones este día. Crea una o planifícala.</Empty>}
+        {today.length === 0 && <Empty icon={Sofa}>Sin sesiones este día. Crea una o planifícala.</Empty>}
         {today.map((w) => {
           const done = w.workout_sets.filter((s) => s.done).length
           return (
             <div key={w.id} className="card" style={{ borderColor: w.planned ? 'var(--line-strong)' : 'color-mix(in srgb, var(--ok) 50%, transparent)' }}>
               <div className="row between">
                 <div>
-                  <h3>{w.planned ? '🗓️' : '✅'} {w.title || 'Sesión'}</h3>
+                  <h3 className="ic">{w.planned ? <CalendarClock size={17} color="var(--muted)" /> : <CircleCheck size={17} color="var(--ok)" />} {w.title || 'Sesión'}</h3>
                   <div className="small muted mono">{done}/{w.workout_sets.length} · {r0(w.kcal)} kcal{w.duration_min ? ` · ${w.duration_min} min` : ''}</div>
                 </div>
                 <button className="btn-sm btn-ghost" onClick={() => setDraft(draftFrom(w))}>Editar</button>
@@ -128,7 +129,7 @@ export default function Training() {
 
         {recent.length > 0 && (
           <div className="card">
-            <h2>♻️ Repetir sesión anterior como plan</h2>
+            <h2><Repeat size={14} /> Repetir sesión anterior como plan</h2>
             <div className="chips" style={{ flexWrap: 'wrap' }}>
               {recent.map((w) => (
                 <button key={w.id} className="chip" onClick={() => setDraft(draftFrom(w, day))}>

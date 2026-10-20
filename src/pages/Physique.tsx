@@ -1,3 +1,4 @@
+import { Brain, CalendarCheck, Camera, Dna, FlaskConical, Scale, TrendingUp } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import BodyFatCalculator from '../components/BodyFatCalculator'
 import ComplianceCalendar from '../components/ComplianceCalendar'
@@ -42,7 +43,7 @@ export default function Physique() {
     const v = num(kgInput)
     if (!v) return
     const { error } = await supabase.from('weights').upsert({ day: ymd(), kg: v })
-    toast(error ? '⚠️ ' + error.message : '⚖️ Guardado')
+    error ? toast.err(error.message) : toast('Peso guardado')
     setKgInput(''); load()
   }
 
@@ -59,15 +60,15 @@ export default function Physique() {
     <div className="shell">
       <div className="topbar">
         <div>
-          <h1>🧬 Physique</h1>
+          <h1><Dna size={22} /> Physique</h1>
           <div className="sub">{fat[0] ? `${r1(fat[0].pct)} % grasa · ${fmtDay(fat[0].day, { day: 'numeric', month: 'short' })}` : 'sin % grasa'}</div>
         </div>
-        <button className="btn-sm" onClick={() => setBfOpen(true)}>🧪 % grasa</button>
+        <button className="btn-sm" onClick={() => setBfOpen(true)}><FlaskConical size={15} /> % grasa</button>
       </div>
 
       <div className="stack">
         <div className="card glow">
-          <h2>⚖️ Peso de referencia</h2>
+          <h2><Scale size={14} /> Peso de referencia</h2>
           <div className="grid3">
             <div className="kpi">
               <span className="v" style={{ color: 'var(--cyan)' }}>{stats.thisW ? r1(stats.thisW.avg) : '--'}</span>
@@ -94,7 +95,7 @@ export default function Physique() {
 
         <div className="card">
           <div className="row between" style={{ marginBottom: 6 }}>
-            <h2 style={{ margin: 0 }}>📈 Evolución</h2>
+            <h2 style={{ margin: 0 }}><TrendingUp size={14} /> Evolución</h2>
             <Seg value={range} onChange={setRange} options={[{ id: '30', label: '30d' }, { id: '90', label: '90d' }, { id: '365', label: '1a' }]} />
           </div>
           {rows.length > 1 ? <WeightChart rows={rows} goal={goal} /> : <div className="empty">Registra al menos 2 días de peso.</div>}
@@ -107,24 +108,24 @@ export default function Physique() {
 
         {showFactor && (
           <div className="card" style={{ borderColor: 'var(--amber)' }}>
-            <h2>🧠 Factor de actividad adaptativo</h2>
+            <h2><Brain size={14} /> Factor de actividad adaptativo</h2>
             <p className="small" style={{ marginTop: 0 }}>
               Con tus pasos y entrenos de los últimos 14 días, tu factor real es <b className="mono">×{suggested}</b> (ahora usas <span className="mono">×{profile!.activity_factor}</span>).
             </p>
-            <button className="btn-primary btn-sm" onClick={async () => { await saveProfile({ activity_factor: suggested! }); toast('✅ Factor actualizado') }}>
+            <button className="btn-primary btn-sm" onClick={async () => { await saveProfile({ activity_factor: suggested! }); toast('Factor actualizado') }}>
               Aplicar ×{suggested}
             </button>
           </div>
         )}
 
         <div className="card">
-          <h2>📅 Cumplimiento de objetivos</h2>
+          <h2><CalendarCheck size={14} /> Cumplimiento de objetivos</h2>
           <ComplianceCalendar />
         </div>
 
         {fat.length > 0 && (
           <div className="card">
-            <h2>🧪 Historial % grasa</h2>
+            <h2><FlaskConical size={14} /> Historial % grasa</h2>
             <div className="list">
               {fat.map((f, i) => (
                 <div key={i} className="list-item">
@@ -138,12 +139,12 @@ export default function Physique() {
         )}
 
         <div className="card">
-          <h2>📸 Fotos de progreso <span className="faint">· privadas</span></h2>
+          <h2><Camera size={14} /> Fotos de progreso <span className="faint">· privadas</span></h2>
           <ProgressPhotos />
         </div>
       </div>
 
-      <Sheet open={bfOpen} onClose={() => setBfOpen(false)} title="🧪 Calculadora de % grasa">
+      <Sheet open={bfOpen} onClose={() => setBfOpen(false)} title="Calculadora de % grasa">
         <BodyFatCalculator onSaved={() => { setBfOpen(false); load() }} />
       </Sheet>
     </div>

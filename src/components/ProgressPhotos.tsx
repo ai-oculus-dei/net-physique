@@ -1,3 +1,4 @@
+import { Camera, ImageOff } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { supabase, uid } from '../lib/supabase'
 import { fmtDay, ymd } from '../lib/dates'
@@ -41,9 +42,9 @@ export default function ProgressPhotos() {
       const { error } = await supabase.storage.from(BUCKET).upload(path, await compress(f), { contentType: 'image/jpeg' })
       if (error) throw error
       await supabase.from('photos').insert({ day: ymd(), path })
-      toast('📸 Foto guardada')
+      toast('Foto guardada')
       load()
-    } catch (e: any) { toast('⚠️ ' + e.message) }
+    } catch (e: any) { toast.err(e.message) }
     setBusy(false)
   }
 
@@ -57,8 +58,8 @@ export default function ProgressPhotos() {
     <div className="stack">
       <input ref={input} type="file" accept="image/*" capture="environment" hidden
         onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = '' }} />
-      <button onClick={() => input.current?.click()} disabled={busy}>{busy ? <span className="spin" /> : '📸 Añadir foto'}</button>
-      {photos && !photos.length && <Empty emoji="🖼️">Sin fotos. Solo tú puedes verlas.</Empty>}
+      <button onClick={() => input.current?.click()} disabled={busy}>{busy ? <span className="spin" /> : <><Camera size={17} /> Añadir foto</>}</button>
+      {photos && !photos.length && <Empty icon={ImageOff}>Sin fotos. Solo tú puedes verlas.</Empty>}
       <div className="grid3">
         {photos?.map((p) => (
           <div key={p.id} onClick={() => setView(p)} style={{ cursor: 'pointer' }}>

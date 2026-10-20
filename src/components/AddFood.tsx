@@ -1,3 +1,4 @@
+import { History, Package, PenLine, ScanBarcode, Search, SearchX, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import BarcodeScanner from './BarcodeScanner'
 import { Empty, Seg, Sheet, num, r0, r1, toast } from './ui'
@@ -20,17 +21,17 @@ export default function AddFood({ open, meal, day, onClose, onSaved }: {
   const pick = (p: Product, grams?: number) => { setPicked(p); setDefaultGrams(grams ?? null) }
 
   return (
-    <Sheet open={open} onClose={onClose} title={picked ? '🧾 Registrar' : '➕ Añadir alimento'}>
+    <Sheet open={open} onClose={onClose} title={picked ? 'Registrar' : 'Añadir alimento'}>
       {picked ? (
         <PortionForm product={picked} meal={meal} day={day} defaultGrams={defaultGrams}
           onBack={() => setPicked(null)} onSaved={onSaved} />
       ) : (
         <div className="stack">
           <Seg value={tab} onChange={setTab} options={[
-            { id: 'history', label: '🕘 Histórico' },
-            { id: 'scan', label: '📷 Escanear' },
-            { id: 'search', label: '🔎 Buscar' },
-            { id: 'manual', label: '✍️ Manual' },
+            { id: 'history', label: <span className="ic"><History size={14} /> Histórico</span> },
+            { id: 'scan', label: <span className="ic"><ScanBarcode size={14} /> Escanear</span> },
+            { id: 'search', label: <span className="ic"><Search size={14} /> Buscar</span> },
+            { id: 'manual', label: <span className="ic"><PenLine size={14} /> Manual</span> },
           ]} />
           {tab === 'scan' && <ScanTab onPick={pick} onManual={() => setTab('manual')} />}
           {tab === 'search' && <SearchTab onPick={pick} />}
@@ -45,7 +46,7 @@ export default function AddFood({ open, meal, day, onClose, onSaved }: {
 function ProductRow({ p, onClick, extra }: { p: Product; onClick: () => void; extra?: string }) {
   return (
     <div className="list-item" onClick={onClick} style={{ cursor: 'pointer' }}>
-      {p.image_url ? <img className="thumb" src={p.image_url} alt="" loading="lazy" /> : <div className="thumb">🥫</div>}
+      {p.image_url ? <img className="thumb" src={p.image_url} alt="" loading="lazy" /> : <div className="thumb"><Package size={20} /></div>}
       <div className="grow">
         <div className="ellipsis">{p.name}</div>
         <div className="small muted ellipsis">{p.brand ?? '—'}{extra ? ` · ${extra}` : ''}</div>
@@ -71,7 +72,7 @@ function ScanTab({ onPick, onManual }: { onPick: (p: Product) => void; onManual:
   if (state === 'loading') return <div className="empty"><span className="spin" /> Buscando {code}…</div>
   if (state === 'missing') return (
     <div className="stack">
-      <Empty emoji="🤷">No se encontró <span className="mono">{code}</span> ni en caché ni en Open Food Facts.</Empty>
+      <Empty icon={SearchX}>No se encontró <span className="mono">{code}</span> ni en caché ni en Open Food Facts.</Empty>
       <div className="grid2">
         <button onClick={() => setState('scan')}>Reintentar</button>
         <button className="btn-primary" onClick={onManual}>Crear manual</button>
@@ -89,16 +90,16 @@ function SearchTab({ onPick }: { onPick: (p: Product) => void }) {
     e.preventDefault()
     if (q.trim().length < 2) return
     setBusy(true)
-    try { setRes(await searchProducts(q.trim())) } catch { toast('⚠️ Error en la búsqueda'); setRes([]) }
+    try { setRes(await searchProducts(q.trim())) } catch { toast.err('Error en la búsqueda'); setRes([]) }
     setBusy(false)
   }
   return (
     <div className="stack">
       <form className="row" onSubmit={go}>
         <input className="grow" placeholder="Nombre, marca o código de barras" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
-        <button className="btn-primary" disabled={busy}>{busy ? <span className="spin" /> : '🔎'}</button>
+        <button className="btn-primary" disabled={busy}>{busy ? <span className="spin" /> : <Search size={18} />}</button>
       </form>
-      {res && res.length === 0 && <Empty emoji="🔍">Sin resultados</Empty>}
+      {res && res.length === 0 && <Empty icon={SearchX}>Sin resultados</Empty>}
       <div className="list">
         {res?.map((p) => <ProductRow key={p.barcode} p={p} onClick={() => onPick(p)} />)}
       </div>
@@ -112,7 +113,7 @@ function HistoryTab({ onPick }: { onPick: (p: Product, g?: number) => void }) {
   const [f, setF] = useState('')
   useEffect(() => { recentProducts().then(setList) }, [])
   if (!list) return <div className="empty"><span className="spin" /></div>
-  if (!list.length) return <Empty emoji="🕘">Aún no hay histórico. Escanea o busca tu primer producto.</Empty>
+  if (!list.length) return <Empty icon={History}>Aún no hay histórico. Escanea o busca tu primer producto.</Empty>
   const shown = list.filter((p) => (p.name + (p.brand ?? '')).toLowerCase().includes(f.toLowerCase()))
   return (
     <div className="stack">
@@ -135,9 +136,9 @@ function ManualTab({ onPick }: { onPick: (p: Product) => void }) {
         kcal_100g: num(v.kcal ?? ''), protein_100g: num(v.protein ?? ''), carbs_100g: num(v.carbs ?? ''),
         fat_100g: num(v.fat ?? ''), serving_g: num(v.serving ?? ''),
       })
-      toast('💾 Producto guardado')
+      toast('Producto guardado')
       onPick(p)
-    } catch (err: any) { toast('⚠️ ' + err.message) }
+    } catch (err: any) { toast.err(err.message) }
   }
   return (
     <form className="stack" onSubmit={save}>
@@ -182,15 +183,15 @@ function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, onSaved 
       day, meal, eaten_at: eaten.toISOString(), barcode: product.barcode, name: product.name, grams: g, ...m,
     })
     setBusy(false)
-    if (error) return toast('⚠️ ' + error.message)
-    toast(`✅ ${r0(m.kcal)} kcal en ${MEALS.find((x) => x.id === meal)?.label}`)
+    if (error) return toast.err(error.message)
+    toast(`${r0(m.kcal)} kcal en ${MEALS.find((x) => x.id === meal)?.label}`)
     onSaved()
   }
 
   return (
     <div className="stack">
       <div className="row">
-        {product.image_url ? <img className="thumb" src={product.image_url} alt="" /> : <div className="thumb">🥫</div>}
+        {product.image_url ? <img className="thumb" src={product.image_url} alt="" /> : <div className="thumb"><Package size={20} /></div>}
         <div className="grow">
           <div style={{ fontWeight: 600 }}>{product.name}</div>
           <div className="small muted">{product.brand ?? ''} <span className="tag">{product.barcode.startsWith('manual') ? 'manual' : product.barcode}</span></div>
@@ -208,7 +209,7 @@ function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, onSaved 
         ))}
       </div>
       <div className="chips">
-        {MEALS.map((x) => <button key={x.id} className={`chip ${meal === x.id ? 'on' : ''}`} onClick={() => setMeal(x.id)}>{x.emoji} {x.label}</button>)}
+        {MEALS.map((x) => <button key={x.id} className={`chip ${meal === x.id ? 'on' : ''}`} onClick={() => setMeal(x.id)}><x.icon size={14} /> {x.label}</button>)}
       </div>
       <div className="card grid3" style={{ gridTemplateColumns: 'repeat(4, 1fr)', padding: 12 }}>
         <div className="kpi"><span className="v" style={{ fontSize: 18 }}>{r0(m.kcal)}</span><span className="l">kcal</span></div>
@@ -216,7 +217,7 @@ function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, onSaved 
         <div className="kpi"><span className="v" style={{ fontSize: 18, color: 'var(--carbs)' }}>{r1(m.carbs)}</span><span className="l">Carb</span></div>
         <div className="kpi"><span className="v" style={{ fontSize: 18, color: 'var(--fat)' }}>{r1(m.fat)}</span><span className="l">Grasa</span></div>
       </div>
-      {product.kcal_100g == null && <div className="small warn">⚠️ Este producto no tiene kcal en Open Food Facts.</div>}
+      {product.kcal_100g == null && <div className="small warn ic"><TriangleAlert size={14} /> Este producto no tiene kcal en Open Food Facts.</div>}
       <div className="grid2">
         <button className="btn-ghost" onClick={onBack}>‹ Volver</button>
         <button className="btn-primary" onClick={save} disabled={busy || g <= 0}>{busy ? <span className="spin" /> : 'Registrar'}</button>

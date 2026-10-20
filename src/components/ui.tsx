@@ -1,40 +1,84 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { CircleCheck, TriangleAlert, X, type LucideIcon } from 'lucide-react'
+
+// Pila de hojas abiertas: Escape y el bloqueo de scroll solo afectan a la de arriba
+const sheetStack: number[] = []
+let sheetSeq = 0
 
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: ReactNode; children: ReactNode }) {
+  const [drag, setDrag] = useState(0)
+  const startY = useRef<number | null>(null)
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+
   useEffect(() => {
     if (!open) return
-    const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const id = ++sheetSeq
+    sheetStack.push(id)
+    const k = (e: KeyboardEvent) => e.key === 'Escape' && sheetStack[sheetStack.length - 1] === id && closeRef.current()
     window.addEventListener('keydown', k)
     document.body.style.overflow = 'hidden'
-    return () => { window.removeEventListener('keydown', k); document.body.style.overflow = '' }
-  }, [open, onClose])
+    return () => {
+      window.removeEventListener('keydown', k)
+      sheetStack.splice(sheetStack.indexOf(id), 1)
+      if (!sheetStack.length) document.body.style.overflow = ''
+    }
+  }, [open])
+  useEffect(() => { if (!open) setDrag(0) }, [open])
+
   if (!open) return null
+
+  // Deslizar hacia abajo desde la pestaña/cabecera para cerrar
+  const dragHandlers = {
+    onTouchStart: (e: React.TouchEvent) => { startY.current = e.touches[0].clientY },
+    onTouchMove: (e: React.TouchEvent) => {
+      if (startY.current == null) return
+      setDrag(Math.max(0, e.touches[0].clientY - startY.current))
+    },
+    onTouchEnd: () => {
+      const d = drag
+      startY.current = null
+      setDrag(0)
+      if (d > 90) onClose()
+    },
+  }
+
   return (
     <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="grab" />
-        {title && (
-          <div className="row between" style={{ marginBottom: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 17 }}>{title}</h3>
-            <button className="btn-icon btn-ghost" onClick={onClose} aria-label="Cerrar">✕</button>
-          </div>
-        )}
+      <div className="sheet" onClick={(e) => e.stopPropagation()}
+        style={drag ? { transform: `translateY(${drag}px)`, transition: 'none' } : undefined}>
+        <div className="sheet-head" {...dragHandlers}>
+          <div className="grab" />
+          {title && (
+            <div className="row between">
+              <h3 style={{ margin: 0, fontSize: 17 }} className="ellipsis">{title}</h3>
+              <button className="btn-icon btn-ghost" onClick={onClose} aria-label="Cerrar"><X size={18} /></button>
+            </div>
+          )}
+        </div>
         {children}
       </div>
     </div>
   )
 }
 
-let pushToast: (m: string) => void = () => {}
-export const toast = (m: string) => pushToast(m)
+type ToastKind = 'ok' | 'err'
+let pushToast: (m: string, k: ToastKind) => void = () => {}
+export const toast = Object.assign((m: string) => pushToast(m, 'ok'), { err: (m: string) => pushToast(m, 'err') })
 
 export function Toaster() {
-  const [msg, setMsg] = useState<string | null>(null)
+  const [msg, setMsg] = useState<{ m: string; k: ToastKind } | null>(null)
   useEffect(() => {
     let t: number | undefined
-    pushToast = (m) => { setMsg(m); clearTimeout(t); t = window.setTimeout(() => setMsg(null), 2400) }
+    pushToast = (m, k) => { setMsg({ m, k }); clearTimeout(t); t = window.setTimeout(() => setMsg(null), 2400) }
   }, [])
-  return msg ? <div className="toast">{msg}</div> : null
+  if (!msg) return null
+  return (
+    <div className={`toast ${msg.k}`}>
+      {msg.k === 'ok' ? <CircleCheck size={17} /> : <TriangleAlert size={17} />}
+      <span>{msg.m}</span>
+    </div>
+  )
 }
 
 export function Ring({ value, max, size = 168, stroke = 12, children }: {
@@ -82,8 +126,8 @@ export function Bar({ value, max, color }: { value: number; max: number; color: 
   )
 }
 
-export function Empty({ emoji, children }: { emoji: string; children: ReactNode }) {
-  return <div className="empty"><span className="big">{emoji}</span>{children}</div>
+export function Empty({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+  return <div className="empty"><span className="big"><Icon size={30} strokeWidth={1.5} /></span>{children}</div>
 }
 
 export function Seg<T extends string>({ value, options, onChange }: { value: T; options: { id: T; label: ReactNode }[]; onChange: (v: T) => void }) {

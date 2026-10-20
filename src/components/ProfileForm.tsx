@@ -1,3 +1,4 @@
+import { Target, User, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { ACTIVITY_FACTORS, ageFromBirthdate, bmr, macroTargets } from '../lib/formulas'
 import type { Profile } from '../lib/types'
@@ -48,13 +49,13 @@ export default function ProfileForm({ initial, onSubmit, submitLabel }: {
   return (
     <form className="stack" onSubmit={submit}>
       <div className="card stack">
-        <h2>👤 Datos personales</h2>
+        <h2><User size={14} /> Datos personales</h2>
         <label className="field"><span>Nombre</span>
           <input value={n('display_name')} onChange={(e) => set('display_name', e.target.value)} placeholder="Álvaro" />
         </label>
         <div className="row between">
           <span className="small muted">Sexo (para las fórmulas)</span>
-          <Seg value={p.sex ?? 'male'} onChange={(v) => set('sex', v)} options={[{ id: 'male', label: '♂ Hombre' }, { id: 'female', label: '♀ Mujer' }]} />
+          <Seg value={p.sex ?? 'male'} onChange={(v) => set('sex', v)} options={[{ id: 'male', label: 'Hombre' }, { id: 'female', label: 'Mujer' }]} />
         </div>
         <div className="grid3">
           <label className="field"><span>Peso (kg)</span>
@@ -73,7 +74,7 @@ export default function ProfileForm({ initial, onSubmit, submitLabel }: {
       </div>
 
       <div className="card stack">
-        <h2>⚡ Actividad y gasto</h2>
+        <h2><Zap size={14} /> Actividad y gasto</h2>
         <label className="field"><span>Nivel de actividad: <b className="mono">{p.activity_level}</b> · {ACTIVITY_LABELS[(p.activity_level ?? 2) - 1]} (×{ACTIVITY_FACTORS[(p.activity_level ?? 2) - 1]})</span>
           <input type="range" min={1} max={5} step={1} value={p.activity_level ?? 2}
             onChange={(e) => { const l = Number(e.target.value); setP((o) => ({ ...o, activity_level: l, activity_factor: ACTIVITY_FACTORS[l - 1] })) }} />
@@ -94,7 +95,7 @@ export default function ProfileForm({ initial, onSubmit, submitLabel }: {
       </div>
 
       <div className="card stack">
-        <h2>🎯 Objetivos</h2>
+        <h2><Target size={14} /> Objetivos</h2>
         <div className="grid3">
           <label className="field"><span>Proteína g/kg</span>
             <input inputMode="decimal" value={n('protein_g_kg')} onChange={(e) => set('protein_g_kg', num(e.target.value))} />

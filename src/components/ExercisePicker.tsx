@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { allExercises, createCustomExercise, filterExercises } from '../lib/exercises'
-import { EQUIPMENT_ES, GROUPS, GROUP_EMOJI, IMG_BASE, MUSCLE_LIST, muscleEs } from '../lib/muscles'
+import { Dumbbell, Lightbulb, PackageOpen, PenLine, Plus } from 'lucide-react'
+import { EQUIPMENT_ES, GROUPS, IMG_BASE, MUSCLE_LIST, muscleEs } from '../lib/muscles'
 import type { Exercise } from '../lib/types'
 import { Empty, Sheet, toast } from './ui'
 
@@ -22,20 +23,22 @@ export default function ExercisePicker({ open, onClose, onPick, initialMuscle }:
 
   const shown = useMemo(() => (list ? filterExercises(list, q, muscle, group).slice(0, 80) : []), [list, q, muscle, group])
 
-  const title = detail ? detail.name : creating ? '✍️ Nuevo ejercicio' : '🔎 Ejercicios'
+  const title = detail ? detail.name : creating ? 'Nuevo ejercicio' : 'Ejercicios'
+  // Con la ficha o el formulario abiertos, cerrar (X o deslizar) vuelve al buscador
+  const close = detail ? () => setDetail(null) : creating ? () => setCreating(false) : onClose
   return (
-    <Sheet open={open} onClose={onClose} title={title}>
+    <Sheet open={open} onClose={close} title={title}>
       {detail ? (
-        <ExerciseDetail e={detail} onBack={() => setDetail(null)} onPick={() => onPick(detail)} />
+        <ExerciseDetail e={detail} onPick={() => onPick(detail)} />
       ) : creating ? (
-        <CustomForm name={q} onBack={() => setCreating(false)} onCreated={(e) => { toast('💾 Ejercicio guardado'); onPick(e) }} />
+        <CustomForm name={q} onBack={() => setCreating(false)} onCreated={(e) => { toast('Ejercicio guardado'); onPick(e) }} />
       ) : (
         <div className="stack">
           <input placeholder="Buscar por nombre (en inglés: squat, press, curl…)" value={q} onChange={(e) => setQ(e.target.value)} />
           <div className="chips">
             {GROUPS.map((g) => (
               <button key={g} className={`chip ${group === g ? 'on' : ''}`} onClick={() => { setGroup(group === g ? null : g); setMuscle(null) }}>
-                {GROUP_EMOJI[g]} {g}
+                {g}
               </button>
             ))}
           </div>
@@ -47,28 +50,28 @@ export default function ExercisePicker({ open, onClose, onPick, initialMuscle }:
             ))}
           </div>
           {!list && <div className="empty"><span className="spin" /></div>}
-          {list && list.length === 0 && <Empty emoji="📦">No hay ejercicios en la base de datos. Ejecuta el seed (README).</Empty>}
+          {list && list.length === 0 && <Empty icon={PackageOpen}>No hay ejercicios en la base de datos. Ejecuta el seed (README).</Empty>}
           <div className="list">
             {shown.map((e) => (
               <div key={e.id} className="list-item">
                 {e.images[0] ? <img className="thumb" src={IMG_BASE + e.images[0]} alt="" loading="lazy" onClick={() => setDetail(e)} />
-                  : <div className="thumb" onClick={() => setDetail(e)}>🏋️</div>}
+                  : <div className="thumb" onClick={() => setDetail(e)}><Dumbbell size={20} /></div>}
                 <div className="grow" onClick={() => setDetail(e)} style={{ cursor: 'pointer' }}>
                   <div className="ellipsis">{e.name} {e.is_custom && <span className="tag">custom</span>}</div>
                   <div className="small muted ellipsis">{e.primary_muscles.map(muscleEs).join(', ')} · {EQUIPMENT_ES[e.equipment ?? ''] ?? e.equipment ?? '—'}</div>
                 </div>
-                <button className="btn-sm" onClick={() => onPick(e)}>＋</button>
+                <button className="btn-icon" onClick={() => onPick(e)} aria-label="Añadir"><Plus size={18} /></button>
               </div>
             ))}
           </div>
-          <button className="btn-ghost" onClick={() => setCreating(true)}>✍️ ¿No está? Crear ejercicio</button>
+          <button className="btn-ghost" onClick={() => setCreating(true)}><PenLine size={16} /> ¿No está? Crear ejercicio</button>
         </div>
       )}
     </Sheet>
   )
 }
 
-export function ExerciseDetail({ e, onBack, onPick }: { e: Exercise; onBack?: () => void; onPick?: () => void }) {
+export function ExerciseDetail({ e, onPick }: { e: Exercise; onPick?: () => void }) {
   const [img, setImg] = useState(0)
   useEffect(() => {
     if (e.images.length < 2) return
@@ -90,18 +93,13 @@ export function ExerciseDetail({ e, onBack, onPick }: { e: Exercise; onBack?: ()
       {e.secondary_muscles.length > 0 && <div className="small muted"><b>Secundarios:</b> {e.secondary_muscles.map(muscleEs).join(', ')}</div>}
       {e.instructions.length > 0 && (
         <div className="card" style={{ padding: 12 }}>
-          <h2>💡 Cómo hacerlo</h2>
+          <h2><Lightbulb size={14} /> Cómo hacerlo</h2>
           <ol className="small" style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {e.instructions.map((s, i) => <li key={i}>{s}</li>)}
           </ol>
         </div>
       )}
-      {(onBack || onPick) && (
-        <div className="grid2">
-          {onBack ? <button className="btn-ghost" onClick={onBack}>‹ Volver</button> : <span />}
-          {onPick && <button className="btn-primary" onClick={onPick}>Añadir ＋</button>}
-        </div>
-      )}
+      {onPick && <button className="btn-primary btn-block" onClick={onPick}><Plus size={18} /> Añadir</button>}
     </div>
   )
 }
@@ -123,7 +121,7 @@ function CustomForm({ name: name0, onBack, onCreated }: { name: string; onBack: 
         name, primary_muscles: prim, secondary_muscles: sec, category, equipment,
         instructions: tips.split('\n').map((s) => s.trim()).filter(Boolean),
       }))
-    } catch (err: any) { toast('⚠️ ' + err.message) }
+    } catch (err: any) { toast.err(err.message) }
   }
 
   return (

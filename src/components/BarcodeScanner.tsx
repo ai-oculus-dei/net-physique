@@ -1,3 +1,4 @@
+import { CameraOff, Flashlight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 const FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128']
@@ -61,7 +62,7 @@ export default function BarcodeScanner({ onDetect }: { onDetect: (code: string) 
     return () => { stopped = true; cancelAnimationFrame(raf); stream?.getTracks().forEach((t) => t.stop()) }
   }, [onDetect])
 
-  if (err) return <div className="empty"><span className="big">📷</span>{err}. Usa la búsqueda manual.</div>
+  if (err) return <div className="empty"><span className="big"><CameraOff size={30} strokeWidth={1.5} /></span>{err}. Usa la búsqueda manual.</div>
 
   return (
     <div className="scanner">
@@ -70,7 +71,7 @@ export default function BarcodeScanner({ onDetect }: { onDetect: (code: string) 
       <div className="laser" />
       {torch && (
         <button className="btn-icon" style={{ position: 'absolute', right: 10, bottom: 10 }}
-          onClick={() => torch.applyConstraints({ advanced: [{ torch: true } as any] })}>🔦</button>
+          onClick={() => torch.applyConstraints({ advanced: [{ torch: true } as any] })}><Flashlight size={18} /></button>
       )}
     </div>
   )

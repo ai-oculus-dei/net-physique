@@ -1,3 +1,4 @@
+import { ArrowRight, Dna, Dumbbell, Salad } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
@@ -24,7 +25,11 @@ export default function Login() {
       <form className="card glow auth-card stack" onSubmit={submit}>
         <div>
           <div className="logo">net<b>physique</b></div>
-          <p className="muted small" style={{ textAlign: 'center', margin: 0 }}>🥗 dieta · 🏋️ entreno · 🧬 físico</p>
+          <p className="muted small row" style={{ justifyContent: 'center', margin: 0, gap: 12 }}>
+            <span className="ic"><Salad size={14} color="var(--cyan)" /> dieta</span>
+            <span className="ic"><Dumbbell size={14} color="var(--cyan)" /> entreno</span>
+            <span className="ic"><Dna size={14} color="var(--cyan)" /> físico</span>
+          </p>
         </div>
         <label className="field"><span>Usuario</span>
           <input autoComplete="username" autoCapitalize="none" value={user} onChange={(e) => setUser(e.target.value)} required />
@@ -33,7 +38,7 @@ export default function Login() {
           <input type="password" autoComplete="current-password" value={pass} onChange={(e) => setPass(e.target.value)} required />
         </label>
         {err && <div className="small bad">{err}</div>}
-        <button className="btn-primary btn-block" disabled={busy}>{busy ? <span className="spin" /> : 'Entrar →'}</button>
+        <button className="btn-primary btn-block" disabled={busy}>{busy ? <span className="spin" /> : <>Entrar <ArrowRight size={17} /></>}</button>
         <p className="faint small" style={{ textAlign: 'center', margin: 0 }}>La sesión se recuerda en este dispositivo.</p>
       </form>
     </div>

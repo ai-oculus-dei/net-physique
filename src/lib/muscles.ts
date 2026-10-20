@@ -23,9 +23,6 @@ export const MUSCLES = {
 export type Muscle = keyof typeof MUSCLES
 export const MUSCLE_LIST = Object.keys(MUSCLES) as Muscle[]
 export const GROUPS = ['Pecho', 'Espalda', 'Hombro', 'Brazo', 'Core', 'Pierna'] as const
-export const GROUP_EMOJI: Record<string, string> = {
-  Pecho: '🫁', Espalda: '🦾', Hombro: '🏔️', Brazo: '💪', Core: '🧱', Pierna: '🦵',
-}
 
 export const muscleEs = (m: string) => (MUSCLES as Record<string, { es: string }>)[m]?.es ?? m
 

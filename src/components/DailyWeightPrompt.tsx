@@ -1,3 +1,4 @@
+import { Scale } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { ymd } from '../lib/dates'
@@ -29,13 +30,13 @@ export default function DailyWeightPrompt() {
     const v = num(kg)
     if (!v) return
     const { error } = await supabase.from('weights').upsert({ day: ymd(), kg: v })
-    if (error) return toast('⚠️ ' + error.message)
-    toast('⚖️ Peso guardado')
+    if (error) return toast.err(error.message)
+    toast('Peso guardado')
     close()
   }
 
   return (
-    <Sheet open={open} onClose={close} title="⚖️ Peso en ayunas">
+    <Sheet open={open} onClose={close} title={<span className="ic"><Scale size={18} color="var(--cyan)" /> Peso en ayunas</span>}>
       <div className="stack">
         <p className="muted small" style={{ margin: 0 }}>Después de ir al baño y antes de comer o beber. Se usa la media semanal como referencia.</p>
         <input className="mono" style={{ fontSize: 28, textAlign: 'center' }} inputMode="decimal" autoFocus

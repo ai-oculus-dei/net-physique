@@ -40,8 +40,8 @@ export default function BodyFatCalculator({ onSaved }: { onSaved: () => void }) 
   async function save() {
     if (!valid) return
     const { error } = await supabase.from('body_fat').insert({ day: ymd(), method, inputs: v, pct: r1(pct) })
-    if (error) return toast('⚠️ ' + error.message)
-    toast(`🧬 ${r1(pct)} % guardado`)
+    if (error) return toast.err(error.message)
+    toast(`${r1(pct)} % guardado`)
     setV({})
     onSaved()
   }
@@ -49,7 +49,7 @@ export default function BodyFatCalculator({ onSaved }: { onSaved: () => void }) 
   return (
     <div className="stack">
       <div className="chips">
-        {([['navy', '📏 Cinta (Navy)'], ['jp3', '🤏 Pliegues 3'], ['jp7', '🤏 Pliegues 7'], ['bia_foot', '⚖️ Báscula pie'], ['bia_hand', '✋ Impedancia mano']] as [Method, string][])
+        {([['navy', 'Cinta (Navy)'], ['jp3', 'Pliegues 3'], ['jp7', 'Pliegues 7'], ['bia_foot', 'Báscula pie'], ['bia_hand', 'Impedancia mano']] as [Method, string][])
           .map(([id, l]) => <button key={id} className={`chip ${method === id ? 'on' : ''}`} onClick={() => { setMethod(id); setV({}) }}>{l}</button>)}
       </div>
 

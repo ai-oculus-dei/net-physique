@@ -1,3 +1,4 @@
+import { Sparkles } from 'lucide-react'
 import ProfileForm from '../components/ProfileForm'
 import { toast } from '../components/ui'
 import { supabase } from '../lib/supabase'
@@ -8,16 +9,16 @@ export default function Onboarding() {
   const { profile, saveProfile } = useApp()
   return (
     <div className="shell">
-      <div className="topbar"><h1>👋 Configuración inicial</h1></div>
+      <div className="topbar"><h1><Sparkles size={22} /> Configuración inicial</h1></div>
       <p className="muted small" style={{ marginTop: -6 }}>
-        Estos datos se usan para el metabolismo basal, el gasto y los macros objetivo. Puedes cambiarlos luego en ⚙️ Ajustes.
+        Estos datos se usan para el metabolismo basal, el gasto y los macros objetivo. Puedes cambiarlos luego en Ajustes.
       </p>
       <ProfileForm
         initial={profile ?? {}}
-        submitLabel="Empezar 🚀"
+        submitLabel="Empezar"
         onSubmit={async (p) => {
           const err = await saveProfile({ ...p, onboarded: true })
-          if (err) return toast('⚠️ ' + err)
+          if (err) return toast.err(err)
           if (p.weight_kg) await supabase.from('weights').upsert({ day: ymd(), kg: p.weight_kg })
         }}
       />

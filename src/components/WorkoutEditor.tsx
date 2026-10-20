@@ -1,3 +1,4 @@
+import { Flame, Info, ListChecks, Plus, Timer, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import BodyHeatmap from './BodyHeatmap'
 import ExercisePicker, { ExerciseDetail } from './ExercisePicker'
@@ -47,14 +48,14 @@ export default function WorkoutEditor({ draft: initial, weekLoad, kg, onClose, o
     setBusy(true)
     try {
       await saveWorkout(d, kg)
-      toast(doneItems.length ? `💪 Entreno guardado · ${r0(estKcal)} kcal` : '🗓️ Plan guardado')
+      toast(doneItems.length ? `Entreno guardado · ${r0(estKcal)} kcal` : 'Plan guardado')
       onSaved()
-    } catch (e: any) { toast('⚠️ ' + e.message) }
+    } catch (e: any) { toast.err(e.message) }
     setBusy(false)
   }
 
   return (
-    <Sheet open onClose={onClose} title={d.id ? '✏️ Editar sesión' : '🏋️ Nueva sesión'}>
+    <Sheet open onClose={onClose} title={d.id ? 'Editar sesión' : 'Nueva sesión'}>
       <div className="stack">
         <div className="grid2">
           <label className="field"><span>Título</span>
@@ -67,14 +68,14 @@ export default function WorkoutEditor({ draft: initial, weekLoad, kg, onClose, o
         <div className="row between wrap">
           <Seg value={d.intensity} onChange={(v) => setD({ ...d, intensity: v })}
             options={[{ id: 'light', label: 'Suave' }, { id: 'moderate', label: 'Media' }, { id: 'vigorous', label: 'Intensa' }]} />
-          <label className="row small muted" style={{ gap: 6 }}>⏱️
+          <label className="row small muted" style={{ gap: 6 }}><Timer size={16} />
             <input style={{ width: 70 }} inputMode="numeric" placeholder="min" value={d.duration_min ?? ''}
               onChange={(e) => setD({ ...d, duration_min: num(e.target.value) })} />
           </label>
         </div>
 
         <div className="card" style={{ padding: 12 }}>
-          <h2>🔥 Mapa de calor previsto (semana)</h2>
+          <h2><Flame size={14} /> Mapa de calor previsto (semana)</h2>
           <BodyHeatmap load={preview} />
         </div>
 
@@ -86,10 +87,10 @@ export default function WorkoutEditor({ draft: initial, weekLoad, kg, onClose, o
                 <div className="row">
                   <input type="checkbox" checked={s.done} onChange={(e) => setItem(i, { done: e.target.checked })} aria-label="Hecho" />
                   <div className="grow" onClick={() => setInfo(s.exercise)} style={{ cursor: 'pointer' }}>
-                    <div className="ellipsis" style={{ fontWeight: 600 }}>{s.exercise.name} <span className="faint small">ⓘ</span></div>
+                    <div className="ellipsis" style={{ fontWeight: 600 }}>{s.exercise.name} <Info size={13} className="faint" /></div>
                     <div className="small muted ellipsis">{s.exercise.primary_muscles.map(muscleEs).join(', ')}</div>
                   </div>
-                  <button className="btn-icon btn-ghost" onClick={() => setD({ ...d, items: d.items.filter((_, j) => j !== i) })}>✕</button>
+                  <button className="btn-icon btn-ghost" onClick={() => setD({ ...d, items: d.items.filter((_, j) => j !== i) })} aria-label="Quitar"><X size={16} /></button>
                 </div>
                 <div className="grid3" style={{ marginTop: 8 }}>
                   {cardio ? (
@@ -111,7 +112,7 @@ export default function WorkoutEditor({ draft: initial, weekLoad, kg, onClose, o
               </div>
             )
           })}
-          <button onClick={() => setPicking(true)}>＋ Añadir ejercicio</button>
+          <button onClick={() => setPicking(true)}><Plus size={17} /> Añadir ejercicio</button>
         </div>
 
         <div className="row between small mono">
@@ -120,7 +121,7 @@ export default function WorkoutEditor({ draft: initial, weekLoad, kg, onClose, o
         </div>
         <div className="grid2">
           {d.id ? <button className="btn-danger" onClick={async () => { await deleteWorkout(d.id!); onSaved() }}>Eliminar</button>
-            : <button className="btn-ghost" onClick={() => setD({ ...d, items: d.items.map((s) => ({ ...s, done: true })) })}>✔ Marcar todo</button>}
+            : <button className="btn-ghost" onClick={() => setD({ ...d, items: d.items.map((s) => ({ ...s, done: true })) })}><ListChecks size={16} /> Marcar todo</button>}
           <button className="btn-primary" disabled={busy || !d.items.length} onClick={save}>{busy ? <span className="spin" /> : 'Guardar'}</button>
         </div>
       </div>

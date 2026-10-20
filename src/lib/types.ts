@@ -1,13 +1,14 @@
+import { Apple, Coffee, Moon, Nut, Sandwich, UtensilsCrossed, type LucideIcon } from 'lucide-react'
 import type { EnergyMode, Sex } from './formulas'
 
 export type Meal = 'desayuno' | 'almuerzo' | 'picoteo' | 'comida' | 'merienda' | 'cena'
-export const MEALS: { id: Meal; label: string; emoji: string }[] = [
-  { id: 'desayuno', label: 'Desayuno', emoji: '🥐' },
-  { id: 'almuerzo', label: 'Almuerzo', emoji: '🥪' },
-  { id: 'picoteo', label: 'Picoteo', emoji: '🥜' },
-  { id: 'comida', label: 'Comida', emoji: '🍝' },
-  { id: 'merienda', label: 'Merienda', emoji: '🍎' },
-  { id: 'cena', label: 'Cena', emoji: '🌙' },
+export const MEALS: { id: Meal; label: string; icon: LucideIcon }[] = [
+  { id: 'desayuno', label: 'Desayuno', icon: Coffee },
+  { id: 'almuerzo', label: 'Almuerzo', icon: Sandwich },
+  { id: 'picoteo', label: 'Picoteo', icon: Nut },
+  { id: 'comida', label: 'Comida', icon: UtensilsCrossed },
+  { id: 'merienda', label: 'Merienda', icon: Apple },
+  { id: 'cena', label: 'Cena', icon: Moon },
 ]
 
 export interface Profile {
