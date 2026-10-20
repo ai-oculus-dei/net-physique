@@ -239,3 +239,8 @@ a { color: var(--cyan); }
 .bottomnav a.active .ico { color: var(--cyan); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--cyan) 55%, transparent)); }
 .thumb .lucide { color: var(--faint); }
 .chip .lucide, .seg .lucide, button .lucide { opacity: .9; }
+
+/* ---------- Mapa muscular ---------- */
+.body-map { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; text-align: center; }
+.body-map svg { width: 100% !important; height: auto !important; max-height: 340px; }
+.body-map path { transition: fill .4s ease; }
