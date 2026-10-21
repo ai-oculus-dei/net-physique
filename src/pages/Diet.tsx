@@ -1,7 +1,8 @@
-import { Beef, ChartNoAxesColumn, ChefHat, Droplet, Dumbbell, Flame, Footprints, Plus, Salad, ScanBarcode, Utensils, Wheat, X } from 'lucide-react'
+import { Beef, CalendarRange, ChartNoAxesColumn, ChefHat, Droplet, Dumbbell, Flame, Footprints, Plus, Salad, ScanBarcode, Utensils, Wheat, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import AddFood from '../components/AddFood'
 import BalanceCard from '../components/BalanceCard'
+import Planner from '../components/Planner'
 import DayPicker from '../components/DayPicker'
 import { Bar, Empty, Ring, r0, toast } from '../components/ui'
 import { hhmm, ymd } from '../lib/dates'
@@ -24,6 +25,7 @@ export default function Diet() {
   const [day, setDay] = useState(ymd())
   const [logs, setLogs] = useState<FoodLog[]>([])
   const [adding, setAdding] = useState<Meal | null>(null)
+  const [planning, setPlanning] = useState(false)
   const { energy } = useDayEnergy(day)
 
   const load = useCallback(async () => {
@@ -115,6 +117,11 @@ export default function Diet() {
           </div>
         </div>
 
+        {/* Planificador: preselección de platos del histórico frente a los objetivos */}
+        <button className="btn-block planner-btn" onClick={() => setPlanning(true)}>
+          <CalendarRange size={18} /> Planificador
+        </button>
+
         {/* Comidas */}
         {MEALS.map((m) => {
           const items = logs.filter((l) => l.meal === m.id)
@@ -149,6 +156,10 @@ export default function Diet() {
         style={{ position: 'fixed', right: 18, bottom: 'calc(96px + env(safe-area-inset-bottom))', borderRadius: 18, padding: '14px 18px', zIndex: 30, boxShadow: 'var(--glow)' }}>
         <ScanBarcode size={18} /> Añadir
       </button>
+
+      <Planner open={planning} onClose={() => setPlanning(false)} day={day} consumed={total}
+        target={energy ? { kcal: energy.kcal, protein: energy.protein, carbs: energy.carbs, fat: energy.fat } : null}
+        onLogged={() => { setPlanning(false); load() }} />
 
       <AddFood open={adding !== null} meal={adding ?? 'comida'} day={day}
         onClose={() => setAdding(null)} onSaved={() => { setAdding(null); load() }} />

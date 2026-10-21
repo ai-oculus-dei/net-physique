@@ -1,6 +1,7 @@
 import { ChefHat, History, Package, PenLine, Pencil, Plus, ScanBarcode, Search, SearchX, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import BarcodeScanner from './BarcodeScanner'
+import DishComposition from './DishComposition'
 import DishEditor from './DishEditor'
 import { decimalText, Empty, Seg, Sheet, num, r0, r1, toast } from './ui'
 import { ensureCached, lookupBarcode, macrosFor, recentProducts, saveManualProduct, searchProducts } from '../lib/food'
@@ -225,9 +226,11 @@ function nowTime() {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, onSaved }: {
+export function PortionForm({ product: product0, meal: meal0, day, defaultGrams, onBack, onSaved }: {
   product: Product; meal: Meal; day: string; defaultGrams: number | null; onBack: () => void; onSaved: () => void
 }) {
+  // los platos pueden actualizarse desde su composición: se recalculan los macros de la ración
+  const [product, setProduct] = useState(product0)
   // la cantidad sugerida (última vez, ración o 100 g) se muestra en gris; se usa si no se escribe nada
   const suggested = Number(defaultGrams ?? product.serving_g ?? 100)
   const [grams, setGrams] = useState('')
@@ -290,6 +293,7 @@ export function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, o
         <button className="btn-primary" onClick={save} disabled={busy || g <= 0}>{busy ? <span className="spin" /> : 'Registrar'}</button>
       </div>
       {day !== ymd() && <div className="small faint">Se registrará en {day}</div>}
+      {dish && <DishComposition dish={product} onUpdated={setProduct} defaultOpen />}
     </div>
   )
 }
