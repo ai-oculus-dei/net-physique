@@ -37,7 +37,7 @@ export default function ProfileForm({ initial, onSubmit, submitLabel, requireCha
 }) {
   const [p, setP] = useState<ProfileDraft>(() => {
     // el tema se guarda aparte (selector de Ajustes): no se arrastra un valor antiguo al guardar el perfil
-    const { theme: _t, updated_at: _u, ...rest } = initial as ProfileDraft & { updated_at?: string }
+    const { theme: _t, updated_at: _u, remind_weight: _rw, remind_bodyfat: _rb, ...rest } = initial as ProfileDraft & { updated_at?: string }
     return { sex: 'male', activity_level: 2, energy_mode: 'adaptive', ...DEFAULTS, ...rest }
   })
   // última versión guardada, para saber si hay cambios pendientes

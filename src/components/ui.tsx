@@ -192,3 +192,16 @@ export function NumInput({ value, onChange, decimal = true, negative = false, fa
       onChange={(e) => { const t = decimalText(e.target.value, { decimal, negative }); setText(t); onChange(emitted(t)) }} />
   )
 }
+
+/** Interruptor con etiqueta (se aplica al instante) */
+export function Switch({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: ReactNode; hint?: ReactNode }) {
+  return (
+    <label className="switch-row">
+      <span className="grow">
+        <span className="switch-label">{label}</span>
+        {hint && <span className="small faint" style={{ display: 'block' }}>{hint}</span>}
+      </span>
+      <input type="checkbox" role="switch" className="switch" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    </label>
+  )
+}

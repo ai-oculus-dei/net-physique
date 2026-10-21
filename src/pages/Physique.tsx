@@ -8,6 +8,7 @@ import { decimalText, Seg, Sheet, num, r1, toast } from '../components/ui'
 import { addDays, fmtDay, weekStart, ymd } from '../lib/dates'
 import { supabase } from '../lib/supabase'
 import { useDayEnergy } from '../lib/useDayEnergy'
+import { emit } from '../lib/events'
 import { useApp } from '../stores/app'
 
 type Range = '30' | '90' | '365'
@@ -43,7 +44,9 @@ export default function Physique() {
     const v = num(kgInput)
     if (!v) return
     const { error } = await supabase.from('weights').upsert({ day: ymd(), kg: v })
-    error ? toast.err(error.message) : toast('Peso guardado')
+    if (error) return toast.err(error.message)
+    toast('Peso guardado')
+    emit('weight-saved')
     setKgInput(''); load()
   }
 
@@ -145,7 +148,7 @@ export default function Physique() {
       </div>
 
       <Sheet open={bfOpen} onClose={() => setBfOpen(false)} title="Calculadora de % grasa">
-        <BodyFatCalculator onSaved={() => { setBfOpen(false); load() }} />
+        <BodyFatCalculator onSaved={() => { setBfOpen(false); load(); emit('bodyfat-saved') }} />
       </Sheet>
     </div>
   )

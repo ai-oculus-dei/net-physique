@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { supabase, supabaseConfigured } from './lib/supabase'
 import { useApp } from './stores/app'
 import BottomNav from './components/BottomNav'
-import DailyWeightPrompt from './components/DailyWeightPrompt'
+import Reminders from './components/Reminders'
 import { Toaster } from './components/ui'
 import Login from './pages/Login'
 import Onboarding from './pages/Onboarding'
@@ -50,7 +50,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/diet" replace />} />
         </Routes>
       </Suspense>
-      <DailyWeightPrompt />
+      <Reminders />
       <BottomNav />
       <Toaster />
     </>

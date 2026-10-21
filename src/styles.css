@@ -347,3 +347,20 @@ input::placeholder { color: var(--faint); opacity: 1; }
 /* botón apagado: sin cambios pendientes */
 button.btn-ghost:disabled { color: var(--faint); border-color: var(--line); opacity: 1; }
 .shell:has(.fab) { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }
+
+/* ---------- Avisos flotantes ---------- */
+.reminders { position: fixed; top: calc(8px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(560px, calc(100% - 16px)); z-index: 70; display: flex; flex-direction: column; gap: 8px; animation: drop .3s cubic-bezier(.2,.8,.2,1); }
+@keyframes drop { from { transform: translate(-50%, -16px); opacity: 0; } }
+.reminder { background: color-mix(in srgb, var(--card-solid) 92%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid color-mix(in srgb, var(--cyan) 45%, var(--line-strong)); border-radius: 16px; padding: 10px 10px 10px 12px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--cyan) 18%, transparent), 0 12px 32px -12px var(--cyan), 0 10px 30px rgba(0,0,0,.35); }
+.reminder-ico { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; flex-shrink: 0; color: var(--cyan); background: color-mix(in srgb, var(--cyan) 12%, var(--bg-2)); box-shadow: 0 0 12px -2px color-mix(in srgb, var(--cyan) 50%, transparent); animation: pulse 2.4s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 20px 0 color-mix(in srgb, var(--cyan) 70%, transparent); } }
+.reminder-title { font-weight: 600; font-size: 14.5px; }
+.toast { z-index: 90; }
+
+/* ---------- Interruptor ---------- */
+.switch-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; cursor: pointer; }
+.switch-label { font-size: 14.5px; }
+input.switch { appearance: none; -webkit-appearance: none; width: 46px; height: 28px; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line-strong); position: relative; flex-shrink: 0; transition: background .2s, border-color .2s, box-shadow .2s; cursor: pointer; }
+input.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--faint); transition: transform .2s cubic-bezier(.2,.8,.2,1), background .2s; }
+input.switch:checked { background: color-mix(in srgb, var(--cyan) 25%, var(--bg-2)); border-color: var(--cyan); box-shadow: 0 0 10px -2px var(--cyan); }
+input.switch:checked::after { transform: translateX(18px); background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }

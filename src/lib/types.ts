@@ -30,6 +30,9 @@ export interface Profile {
   protein_min_pct: number
   steps_goal: number
   onboarded: boolean
+  /** avisos (se desactivan en Ajustes) */
+  remind_weight?: boolean
+  remind_bodyfat?: boolean
 }
 
 export interface Product {
