@@ -293,3 +293,13 @@ html, body { overflow-x: hidden; }
 .balance-row b { color: var(--text); }
 .ruler-marker.edge-l span { left: -2px; transform: none; }
 .ruler-marker.edge-r span { left: auto; right: -2px; transform: none; }
+
+/* Calendario: punto de dieta por niveles (verde / naranja / rojo) con neón */
+.cal .cell .dots i.d.on.orange { background: var(--sem-orange); box-shadow: 0 0 6px var(--sem-orange), 0 0 12px color-mix(in srgb, var(--sem-orange) 60%, transparent); }
+.cal .cell .dots i.d.on.red { background: var(--sem-red); box-shadow: 0 0 6px var(--sem-red), 0 0 12px color-mix(in srgb, var(--sem-red) 60%, transparent); }
+.cal-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.dot-l { width: 8px; height: 8px; border-radius: 9px; display: inline-block; }
+.dot-l.green { background: var(--lime); box-shadow: 0 0 6px var(--lime); }
+.dot-l.orange { background: var(--sem-orange); box-shadow: 0 0 6px var(--sem-orange); }
+.dot-l.red { background: var(--sem-red); box-shadow: 0 0 6px var(--sem-red); }

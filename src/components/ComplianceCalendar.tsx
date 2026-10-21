@@ -2,10 +2,18 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { addDays, ymd } from '../lib/dates'
 import { useApp } from '../stores/app'
+import { computeDayEnergy } from '../lib/energy'
+import { DIET_OVER_OFF_PCT, DIET_OVER_WARN_PCT, dietDayLevel, type DietLevel } from '../lib/compliance'
 
-interface DayStatus { diet: boolean | null; training: boolean | null; kcal: number; target: number | null }
+interface DayStatus { diet: DietLevel | null; training: boolean | null; kcal: number; target: number | null }
 
-/** Cumplimiento: dieta = kcal dentro de ±tolerancia y proteína ≥ mínimo · entreno = sesión hecha o pasos ≥ objetivo */
+const DIET_LABEL: Record<DietLevel, string> = {
+  green: `hasta +${DIET_OVER_WARN_PCT}% del objetivo`,
+  orange: `+${DIET_OVER_WARN_PCT}–${DIET_OVER_OFF_PCT}% sobre el objetivo`,
+  red: `más de +${DIET_OVER_OFF_PCT}% sobre el objetivo`,
+}
+
+/** Dieta: color según el balance neto del día (ver lib/compliance) · Entreno: sesión hecha o pasos ≥ objetivo */
 export default function ComplianceCalendar() {
   const profile = useApp((s) => s.profile)!
   const [month, setMonth] = useState(() => ymd().slice(0, 7))
@@ -18,25 +26,29 @@ export default function ComplianceCalendar() {
   useEffect(() => {
     (async () => {
       const [food, targets, wos, steps] = await Promise.all([
-        supabase.from('food_logs').select('day,kcal,protein').gte('day', first).lte('day', last),
-        supabase.from('daily_energy').select('day,target_kcal,target_protein').gte('day', first).lte('day', last),
+        supabase.from('food_logs').select('day,kcal').gte('day', first).lte('day', last),
+        supabase.from('daily_energy').select('day,target_kcal').gte('day', first).lte('day', last),
         supabase.from('workouts').select('day').eq('planned', false).gte('day', first).lte('day', last),
         supabase.from('steps').select('day,steps').gte('day', first).lte('day', last),
       ])
+      const consumed = new Map<string, number>()
+      for (const r of food.data ?? []) consumed.set(r.day, (consumed.get(r.day) ?? 0) + Number(r.kcal))
+      const target = new Map<string, number>((targets.data ?? []).map((r) => [r.day, Number(r.target_kcal)]))
+      // días con comidas pero sin objetivo guardado: se calcula igual que en Diet
+      await Promise.all([...consumed.keys()].filter((d) => !target.has(d)).map(async (d) => {
+        target.set(d, Math.round((await computeDayEnergy(profile, d)).kcal))
+      }))
+
       const out: Record<string, DayStatus> = {}
       for (let i = 0; i < daysIn; i++) {
         const d = addDays(first, i)
-        const f = (food.data ?? []).filter((r) => r.day === d)
-        const kcal = f.reduce((a, r) => a + Number(r.kcal), 0)
-        const prot = f.reduce((a, r) => a + Number(r.protein), 0)
-        const t = (targets.data ?? []).find((r) => r.day === d)
-        const tol = Number(profile.kcal_tolerance_pct) / 100
-        const diet = !f.length || !t ? null
-          : Math.abs(kcal - t.target_kcal) <= t.target_kcal * tol && prot >= t.target_protein * (Number(profile.protein_min_pct) / 100)
+        const kcal = consumed.get(d) ?? 0
+        const t = target.get(d) ?? null
+        const diet = dietDayLevel(kcal, t)
         const trained = (wos.data ?? []).some((r) => r.day === d)
         const st = (steps.data ?? []).find((r) => r.day === d)?.steps ?? 0
         const training = d > ymd() ? null : trained || st >= profile.steps_goal
-        out[d] = { diet, training, kcal, target: t?.target_kcal ?? null }
+        out[d] = { diet, training, kcal, target: t }
       }
       setStatus(out)
     })()
@@ -44,7 +56,8 @@ export default function ComplianceCalendar() {
 
   const offset = (new Date(first + 'T12:00:00').getDay() + 6) % 7
   const vals = Object.entries(status).filter(([d]) => d <= ymd())
-  const dietOk = vals.filter(([, s]) => s.diet).length
+  const dietCount = (l: DietLevel) => vals.filter(([, s]) => s.diet === l).length
+  const dietOk = dietCount('green')
   const trainOk = vals.filter(([, s]) => s.training).length
   const shift = (n: number) => {
     const d = new Date(first + 'T12:00:00'); d.setMonth(d.getMonth() + n); setMonth(ymd(d).slice(0, 7))
@@ -64,16 +77,21 @@ export default function ComplianceCalendar() {
           const d = addDays(first, i)
           const s = status[d]
           return (
-            <div key={d} className={`cell ${d === ymd() ? 'today' : ''} ${s?.diet && s?.training ? 'both' : ''}`}
-              title={s?.target ? `${Math.round(s.kcal)} / ${s.target} kcal` : undefined}>
+            <div key={d} className={`cell ${d === ymd() ? 'today' : ''} ${s?.diet === 'green' && s?.training ? 'both' : ''}`}
+              title={s?.target && s.diet ? `${Math.round(s.kcal)} / ${s.target} kcal · ${DIET_LABEL[s.diet]}` : undefined}>
               <span className="mono" style={{ opacity: d > ymd() ? 0.35 : 1 }}>{i + 1}</span>
-              <div className="dots"><i className={`d ${s?.diet ? 'on' : ''}`} /><i className={`t ${s?.training ? 'on' : ''}`} /></div>
+              <div className="dots"><i className={`d ${s?.diet ? `on ${s.diet}` : ''}`} /><i className={`t ${s?.training ? 'on' : ''}`} /></div>
             </div>
           )
         })}
       </div>
+      <div className="cal-legend small">
+        <span className="muted">Dieta</span>
+        <span><i className="dot-l green" /> ≤+{DIET_OVER_WARN_PCT}% <b className="mono">{dietOk}</b></span>
+        <span><i className="dot-l orange" /> +{DIET_OVER_WARN_PCT}–{DIET_OVER_OFF_PCT}% <b className="mono">{dietCount('orange')}</b></span>
+        <span><i className="dot-l red" /> &gt;+{DIET_OVER_OFF_PCT}% <b className="mono">{dietCount('red')}</b></span>
+      </div>
       <div className="row between small">
-        <span><span style={{ color: 'var(--lime)' }}>●</span> Dieta <b className="mono">{dietOk}</b></span>
         <span><span style={{ color: 'var(--violet)' }}>●</span> Entreno/pasos <b className="mono">{trainOk}</b></span>
         <span className="muted mono">{vals.length ? Math.round(((dietOk + trainOk) / (vals.length * 2)) * 100) : 0}% total</span>
       </div>
