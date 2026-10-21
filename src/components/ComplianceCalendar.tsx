@@ -3,17 +3,32 @@ import { supabase } from '../lib/supabase'
 import { addDays, ymd } from '../lib/dates'
 import { useApp } from '../stores/app'
 import { computeDayEnergy } from '../lib/energy'
-import { DIET_OVER_OFF_PCT, DIET_OVER_WARN_PCT, dietDayLevel, type DietLevel } from '../lib/compliance'
+import { DIET_OVER_OFF_PCT, DIET_OVER_WARN_PCT, dietDayStatus, type DietLevel, type DietReason } from '../lib/compliance'
 
-interface DayStatus { diet: DietLevel | null; training: boolean | null; kcal: number; target: number | null }
-
-const DIET_LABEL: Record<DietLevel, string> = {
-  green: `hasta +${DIET_OVER_WARN_PCT}% del objetivo`,
-  orange: `+${DIET_OVER_WARN_PCT}–${DIET_OVER_OFF_PCT}% sobre el objetivo`,
-  red: `más de +${DIET_OVER_OFF_PCT}% sobre el objetivo`,
+interface DayStatus {
+  diet: DietLevel | null
+  reasons: DietReason[]
+  training: boolean | null
+  kcal: number
+  target: number | null
+  protein: number
+  proteinTarget: number | null
 }
 
-/** Dieta: color según el balance neto del día (ver lib/compliance) · Entreno: sesión hecha o pasos ≥ objetivo */
+const REASON_TEXT: Record<DietReason, string> = {
+  over: 'por encima del objetivo',
+  under: 'por debajo de la tolerancia',
+  protein: 'proteína bajo el mínimo',
+}
+
+/** Dieta: exceso de kcal, quedarse corto y proteína (ver lib/compliance) · Entreno: sesión hecha o pasos ≥ objetivo */
+function dayTitle(s: DayStatus) {
+  const parts = [`${Math.round(s.kcal)} / ${s.target} kcal`]
+  if (s.proteinTarget) parts.push(`${Math.round(s.protein)} / ${s.proteinTarget} g proteína`)
+  if (s.reasons.length) parts.push(s.reasons.map((r) => REASON_TEXT[r]).join(', '))
+  return parts.join(' · ')
+}
+
 export default function ComplianceCalendar() {
   const profile = useApp((s) => s.profile)!
   const [month, setMonth] = useState(() => ymd().slice(0, 7))
@@ -26,29 +41,42 @@ export default function ComplianceCalendar() {
   useEffect(() => {
     (async () => {
       const [food, targets, wos, steps] = await Promise.all([
-        supabase.from('food_logs').select('day,kcal').gte('day', first).lte('day', last),
-        supabase.from('daily_energy').select('day,target_kcal').gte('day', first).lte('day', last),
+        supabase.from('food_logs').select('day,kcal,protein').gte('day', first).lte('day', last),
+        supabase.from('daily_energy').select('day,target_kcal,target_protein').gte('day', first).lte('day', last),
         supabase.from('workouts').select('day').eq('planned', false).gte('day', first).lte('day', last),
         supabase.from('steps').select('day,steps').gte('day', first).lte('day', last),
       ])
-      const consumed = new Map<string, number>()
-      for (const r of food.data ?? []) consumed.set(r.day, (consumed.get(r.day) ?? 0) + Number(r.kcal))
-      const target = new Map<string, number>((targets.data ?? []).map((r) => [r.day, Number(r.target_kcal)]))
+      const consumed = new Map<string, { kcal: number; protein: number }>()
+      for (const r of food.data ?? []) {
+        const c = consumed.get(r.day) ?? { kcal: 0, protein: 0 }
+        consumed.set(r.day, { kcal: c.kcal + Number(r.kcal), protein: c.protein + Number(r.protein) })
+      }
+      const target = new Map<string, { kcal: number; protein: number | null }>((targets.data ?? []).map((r) =>
+        [r.day, { kcal: Number(r.target_kcal), protein: r.target_protein != null ? Number(r.target_protein) : null }]))
       // días con comidas pero sin objetivo guardado: se calcula igual que en Diet
       await Promise.all([...consumed.keys()].filter((d) => !target.has(d)).map(async (d) => {
-        target.set(d, Math.round((await computeDayEnergy(profile, d)).kcal))
+        const e = await computeDayEnergy(profile, d)
+        target.set(d, { kcal: Math.round(e.kcal), protein: Math.round(e.protein) })
       }))
+      const today = ymd()
 
       const out: Record<string, DayStatus> = {}
       for (let i = 0; i < daysIn; i++) {
         const d = addDays(first, i)
-        const kcal = consumed.get(d) ?? 0
-        const t = target.get(d) ?? null
-        const diet = dietDayLevel(kcal, t)
+        const c = consumed.get(d) ?? { kcal: 0, protein: 0 }
+        const t = target.get(d)
+        const ds = dietDayStatus({
+          consumed: c.kcal, target: t?.kcal, protein: c.protein, proteinTarget: t?.protein,
+          underTolPct: Number(profile.kcal_tolerance_pct), proteinMinPct: Number(profile.protein_min_pct),
+          complete: d < today,
+        })
         const trained = (wos.data ?? []).some((r) => r.day === d)
         const st = (steps.data ?? []).find((r) => r.day === d)?.steps ?? 0
         const training = d > ymd() ? null : trained || st >= profile.steps_goal
-        out[d] = { diet, training, kcal, target: t }
+        out[d] = {
+          diet: ds?.level ?? null, reasons: ds?.reasons ?? [], training, kcal: c.kcal, target: t?.kcal ?? null,
+          protein: c.protein, proteinTarget: t?.protein ?? null,
+        }
       }
       setStatus(out)
     })()
@@ -78,7 +106,7 @@ export default function ComplianceCalendar() {
           const s = status[d]
           return (
             <div key={d} className={`cell ${d === ymd() ? 'today' : ''} ${s?.diet === 'green' && s?.training ? 'both' : ''}`}
-              title={s?.target && s.diet ? `${Math.round(s.kcal)} / ${s.target} kcal · ${DIET_LABEL[s.diet]}` : undefined}>
+              title={s?.target && s.diet ? dayTitle(s) : undefined}>
               <span className="mono" style={{ opacity: d > ymd() ? 0.35 : 1 }}>{i + 1}</span>
               <div className="dots"><i className={`d ${s?.diet ? `on ${s.diet}` : ''}`} /><i className={`t ${s?.training ? 'on' : ''}`} /></div>
             </div>
@@ -87,9 +115,14 @@ export default function ComplianceCalendar() {
       </div>
       <div className="cal-legend small">
         <span className="muted">Dieta</span>
-        <span><i className="dot-l green" /> ≤+{DIET_OVER_WARN_PCT}% <b className="mono">{dietOk}</b></span>
-        <span><i className="dot-l orange" /> +{DIET_OVER_WARN_PCT}–{DIET_OVER_OFF_PCT}% <b className="mono">{dietCount('orange')}</b></span>
+        <span><i className="dot-l green" /> cumplido <b className="mono">{dietOk}</b></span>
+        <span><i className="dot-l orange" /> algo desviado <b className="mono">{dietCount('orange')}</b></span>
         <span><i className="dot-l red" /> &gt;+{DIET_OVER_OFF_PCT}% <b className="mono">{dietCount('red')}</b></span>
+      </div>
+      <div className="small faint" style={{ marginTop: -4 }}>
+        Verde: hasta +{DIET_OVER_WARN_PCT}% del objetivo, sin quedarse más de un {Number(profile.kcal_tolerance_pct)}% por debajo
+        y con al menos el {Number(profile.protein_min_pct)}% de la proteína. Naranja: +{DIET_OVER_WARN_PCT}–{DIET_OVER_OFF_PCT}%,
+        o corto de kcal o de proteína. Rojo: más de +{DIET_OVER_OFF_PCT}%.
       </div>
       <div className="row between small">
         <span><span style={{ color: 'var(--violet)' }}>●</span> Entreno/pasos <b className="mono">{trainOk}</b></span>
