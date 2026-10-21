@@ -9,9 +9,17 @@ const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-const FIELDS = 'code,product_name,product_name_es,brands,image_front_small_url,nutriments,serving_quantity'
+const FIELDS = 'code,product_name,product_name_es,brands,image_front_small_url,nutriments,serving_quantity,serving_size,quantity,product_quantity_unit,serving_quantity_unit'
 
 type Off = Record<string, any>
+
+/** Los campos *_100g de OFF son "por 100 g o por 100 ml": la unidad sale de la cantidad del envase (= src/lib/units.ts) */
+function detectUnit(p: Off): 'g' | 'ml' {
+  const u = String(p.product_quantity_unit || p.serving_quantity_unit || '').toLowerCase().trim()
+  if (u) return u === 'ml' || u === 'cl' || u === 'l' ? 'ml' : 'g'
+  const text = `${p.quantity ?? ''} ${p.serving_size ?? ''}`.toLowerCase()
+  return /\d\s*(ml|cl|dl|l|litros?)\b/.test(text) ? 'ml' : 'g'
+}
 
 function toRow(p: Off) {
   const n = p.nutriments ?? {}
@@ -30,6 +38,7 @@ function toRow(p: Off) {
     fiber_100g: n.fiber_100g ?? null,
     salt_100g: n.salt_100g ?? null,
     serving_g: Number(p.serving_quantity) || null,
+    unit: detectUnit(p),
     raw_json: p,
     source: 'off',
   }

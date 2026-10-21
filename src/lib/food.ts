@@ -63,3 +63,9 @@ export function macrosFor(p: Product, grams: number) {
     fat: Number(p.fat_100g ?? 0) * f,
   }
 }
+
+/** Corrige si un producto va por 100 g o por 100 ml (catálogo compartido) */
+export async function setProductUnit(barcode: string, unit: 'g' | 'ml') {
+  const { error } = await supabase.rpc('set_product_unit', { p_barcode: barcode, p_unit: unit })
+  if (error) throw error
+}

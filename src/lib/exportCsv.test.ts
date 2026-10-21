@@ -4,7 +4,7 @@ import { buildExportRows, exportHeaders, toCsv, type ExportInput } from './expor
 const input: ExportInput = {
   foods: [
     { day: '2026-10-20', time: '14:05', meal: 'comida', name: 'Judías verdes, con jamón', grams: 350, kcal: 274.4, protein: 21.35, fat: 10.15, carbs: 14.7 },
-    { day: '2026-10-19', time: '08:30', meal: 'desayuno', name: 'Yogur "griego"', grams: 125, kcal: 120, protein: 4, fat: 10, carbs: 4 },
+    { day: '2026-10-19', time: '08:30', meal: 'desayuno', name: 'Yogur "griego"', grams: 125, unit: 'ml', kcal: 120, protein: 4, fat: 10, carbs: 4 },
   ],
   sets: [
     { day: '2026-10-20', session: 'Pierna', exercise: 'Barbell Squat', sets: 4, reps: 8, weightKg: 100, minutes: null, primary: ['quadriceps'], secondary: ['glutes'] },
@@ -19,7 +19,7 @@ const input: ExportInput = {
 describe('exportación CSV', () => {
   it('columnas según los tipos elegidos', () => {
     expect(exportHeaders({ diet: true, training: false, sep: ',' })).toEqual(
-      ['tipo', 'fecha', 'hora', 'comida', 'alimento', 'gramos', 'kcal', 'proteinas_g', 'grasas_g', 'carbohidratos_g', 'kcal_objetivo_dia', 'peso_dia_kg'])
+      ['tipo', 'fecha', 'hora', 'comida', 'alimento', 'cantidad', 'unidad', 'kcal', 'proteinas_g', 'grasas_g', 'carbohidratos_g', 'kcal_objetivo_dia', 'peso_dia_kg'])
     expect(exportHeaders({ diet: false, training: true, sep: ',' })).toEqual(
       ['tipo', 'fecha', 'sesion', 'ejercicio', 'series', 'repeticiones', 'peso_levantado_kg', 'minutos', 'distancia_km', 'vatios_medios', 'fc_media', 'kcal_actividad', 'metodo_kcal', 'musculos', 'pasos_dia'])
   })
@@ -27,8 +27,8 @@ describe('exportación CSV', () => {
   it('solo Diet: filas por alimento, ordenadas por fecha, con objetivo y peso del día', () => {
     const rows = buildExportRows(input, { diet: true, training: false, sep: ',' })
     expect(rows).toHaveLength(2)
-    expect(rows[0]).toEqual(['Diet', '2026-10-19', '08:30', 'Desayuno', 'Yogur "griego"', 125, 120, 4, 10, 4, 2100, null])
-    expect(rows[1]).toEqual(['Diet', '2026-10-20', '14:05', 'Comida', 'Judías verdes, con jamón', 350, 274.4, 21.4, 10.2, 14.7, 2050, 80.4])
+    expect(rows[0]).toEqual(['Diet', '2026-10-19', '08:30', 'Desayuno', 'Yogur "griego"', 125, 'ml', 120, 4, 10, 4, 2100, null])
+    expect(rows[1]).toEqual(['Diet', '2026-10-20', '14:05', 'Comida', 'Judías verdes, con jamón', 350, 'g', 274.4, 21.4, 10.2, 14.7, 2050, 80.4])
   })
 
   it('solo Training: ejercicios con músculos y pasos; día solo con pasos incluido', () => {
@@ -51,9 +51,9 @@ describe('exportación CSV', () => {
     const o = { diet: true, training: false, sep: ',' as const }
     const csv = toCsv(exportHeaders(o), buildExportRows(input, o), ',')
     expect(csv.startsWith('﻿tipo,fecha,')).toBe(true)
-    expect(csv).toContain('"Judías verdes, con jamón",350,274.4')
+    expect(csv).toContain('"Judías verdes, con jamón",350,g,274.4')
     expect(csv).toContain('"Yogur ""griego"""')
     const csv2 = toCsv(exportHeaders(o), buildExportRows(input, o), ';')
-    expect(csv2).toContain('Judías verdes, con jamón;350;274.4')
+    expect(csv2).toContain('Judías verdes, con jamón;350;g;274.4')
   })
 })

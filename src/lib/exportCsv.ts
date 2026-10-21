@@ -7,7 +7,7 @@ import { MEALS } from './types'
 export interface ExportOptions { diet: boolean; training: boolean; sep: ',' | ';' }
 
 export interface ExportFood {
-  day: string; time: string; meal: string; name: string; grams: number
+  day: string; time: string; meal: string; name: string; grams: number; unit?: string
   kcal: number; protein: number; fat: number; carbs: number
 }
 export interface ExportSet {
@@ -25,7 +25,7 @@ export interface ExportInput {
   steps: Record<string, number>
 }
 
-const DIET_COLS = ['hora', 'comida', 'alimento', 'gramos', 'kcal', 'proteinas_g', 'grasas_g', 'carbohidratos_g', 'kcal_objetivo_dia', 'peso_dia_kg']
+const DIET_COLS = ['hora', 'comida', 'alimento', 'cantidad', 'unidad', 'kcal', 'proteinas_g', 'grasas_g', 'carbohidratos_g', 'kcal_objetivo_dia', 'peso_dia_kg']
 const TRAINING_COLS = ['sesion', 'ejercicio', 'series', 'repeticiones', 'peso_levantado_kg', 'minutos', 'distancia_km', 'vatios_medios', 'fc_media', 'kcal_actividad', 'metodo_kcal', 'musculos', 'pasos_dia']
 
 type Cell = string | number | null | undefined
@@ -56,7 +56,7 @@ export function buildExportRows(input: ExportInput, o: ExportOptions): Cell[][] 
       out.push({
         day: f.day, order: 0, row: row({
           tipo: 'Diet', ...dayCols(f.day), hora: f.time, comida: mealLabel(f.meal), alimento: f.name,
-          gramos: r1(f.grams), kcal: r1(f.kcal), proteinas_g: r1(f.protein), grasas_g: r1(f.fat), carbohidratos_g: r1(f.carbs),
+          cantidad: r1(f.grams), unidad: f.unit ?? 'g', kcal: r1(f.kcal), proteinas_g: r1(f.protein), grasas_g: r1(f.fat), carbohidratos_g: r1(f.carbs),
         }),
       })
     }

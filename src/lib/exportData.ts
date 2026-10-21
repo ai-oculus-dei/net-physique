@@ -8,7 +8,7 @@ import type { Profile } from './types'
 export async function loadExportInput(profile: Profile, from: string, to: string, o: Pick<ExportOptions, 'diet' | 'training'>): Promise<ExportInput> {
   const empty = { data: [] as any[] }
   const [food, targets, weights, workouts, steps] = await Promise.all([
-    o.diet ? supabase.from('food_logs').select('day,eaten_at,meal,name,grams,kcal,protein,carbs,fat')
+    o.diet ? supabase.from('food_logs').select('day,eaten_at,meal,name,grams,unit,kcal,protein,carbs,fat')
       .gte('day', from).lte('day', to).order('day').order('eaten_at') : empty,
     o.diet ? supabase.from('daily_energy').select('day,target_kcal').gte('day', from).lte('day', to) : empty,
     o.diet ? supabase.from('weights').select('day,kg').gte('day', from).lte('day', to) : empty,
@@ -18,7 +18,7 @@ export async function loadExportInput(profile: Profile, from: string, to: string
   ])
 
   const foods = (food.data ?? []).map((f: any) => ({
-    day: f.day, time: hhmm(f.eaten_at), meal: f.meal, name: f.name, grams: Number(f.grams),
+    day: f.day, time: hhmm(f.eaten_at), meal: f.meal, name: f.name, grams: Number(f.grams), unit: f.unit ?? 'g',
     kcal: Number(f.kcal), protein: Number(f.protein), fat: Number(f.fat), carbs: Number(f.carbs),
   }))
 

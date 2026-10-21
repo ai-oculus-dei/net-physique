@@ -4,7 +4,8 @@ import BarcodeScanner from './BarcodeScanner'
 import DishComposition from './DishComposition'
 import DishEditor from './DishEditor'
 import { decimalText, Empty, Seg, Sheet, num, r0, r1, toast } from './ui'
-import { ensureCached, lookupBarcode, macrosFor, recentProducts, saveManualProduct, searchProducts } from '../lib/food'
+import { ensureCached, lookupBarcode, macrosFor, recentProducts, saveManualProduct, searchProducts, setProductUnit } from '../lib/food'
+import { unitOf, type FoodUnit } from '../lib/units'
 import { listDishes } from '../lib/dishes'
 import { ymd } from '../lib/dates'
 import { supabase } from '../lib/supabase'
@@ -75,7 +76,7 @@ function ProductRow({ p, onClick, extra, action }: { p: Product; onClick: () => 
         </div>
       </div>
       <div className="mono small" style={{ textAlign: 'right' }}>
-        {r0(p.kcal_100g)}<div className="faint tiny">kcal/100g</div>
+        {r0(p.kcal_100g)}<div className="faint tiny">kcal/100{unitOf(p)}</div>
       </div>
       {action}
     </div>
@@ -143,7 +144,7 @@ function HistoryTab({ onPick }: { onPick: (p: Product, g?: number) => void }) {
     <div className="stack">
       <input placeholder="Filtrar histórico…" value={f} onChange={(e) => setF(e.target.value)} />
       <div className="list">
-        {shown.map((p) => <ProductRow key={p.barcode} p={p} extra={`últ. ${r0(p.lastGrams)} g`} onClick={() => onPick(p, p.lastGrams)} />)}
+        {shown.map((p) => <ProductRow key={p.barcode} p={p} extra={`últ. ${r0(p.lastGrams)} ${unitOf(p)}`} onClick={() => onPick(p, p.lastGrams)} />)}
       </div>
     </div>
   )
@@ -186,6 +187,7 @@ function DishesTab({ onPick }: { onPick: (p: Product) => void }) {
 
 export function ManualTab({ onPick }: { onPick: (p: Product) => void }) {
   const [v, setV] = useState<Record<string, string>>({})
+  const [unit, setUnit] = useState<FoodUnit>('g')
   const s = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setV((o) => ({ ...o, [k]: e.target.value }))
   // campos numéricos: coma → punto
   const sd = (k: string, decimal = true) => (e: React.ChangeEvent<HTMLInputElement>) => setV((o) => ({ ...o, [k]: decimalText(e.target.value, { decimal }) }))
@@ -195,7 +197,7 @@ export function ManualTab({ onPick }: { onPick: (p: Product) => void }) {
       const p = await saveManualProduct({
         barcode: v.barcode, name: v.name, brand: v.brand || null, image_url: null,
         kcal_100g: num(v.kcal ?? ''), protein_100g: num(v.protein ?? ''), carbs_100g: num(v.carbs ?? ''),
-        fat_100g: num(v.fat ?? ''), serving_g: num(v.serving ?? ''),
+        fat_100g: num(v.fat ?? ''), serving_g: num(v.serving ?? ''), unit,
       })
       toast('Producto guardado')
       onPick(p)
@@ -208,14 +210,17 @@ export function ManualTab({ onPick }: { onPick: (p: Product) => void }) {
         <label className="field"><span>Marca</span><input value={v.brand ?? ''} onChange={s('brand')} /></label>
         <label className="field"><span>Código de barras</span><input inputMode="numeric" value={v.barcode ?? ''} onChange={sd('barcode', false)} /></label>
       </div>
-      <span className="tiny muted">Valores por 100 g</span>
+      <div className="row between">
+        <span className="tiny muted">Valores por</span>
+        <Seg value={unit} onChange={setUnit} options={[{ id: 'g', label: '100 g' }, { id: 'ml', label: '100 ml (líquido)' }]} />
+      </div>
       <div className="grid2">
         <label className="field"><span>kcal *</span><input required inputMode="decimal" value={v.kcal ?? ''} onChange={sd('kcal')} /></label>
         <label className="field"><span>Proteína g</span><input inputMode="decimal" value={v.protein ?? ''} onChange={sd('protein')} /></label>
         <label className="field"><span>Carbohidratos g</span><input inputMode="decimal" value={v.carbs ?? ''} onChange={sd('carbs')} /></label>
         <label className="field"><span>Grasas g</span><input inputMode="decimal" value={v.fat ?? ''} onChange={sd('fat')} /></label>
       </div>
-      <label className="field"><span>Ración habitual (g)</span><input inputMode="decimal" value={v.serving ?? ''} onChange={sd('serving')} /></label>
+      <label className="field"><span>Ración habitual ({unit})</span><input inputMode="decimal" value={v.serving ?? ''} onChange={sd('serving')} /></label>
       <button className="btn-primary">Guardar producto</button>
     </form>
   )
@@ -240,13 +245,23 @@ export function PortionForm({ product: product0, meal: meal0, day, defaultGrams,
   const g = num(grams) ?? suggested
   const m = macrosFor(product, g)
   const dish = isDish(product)
+  const unit = unitOf(product)
+
+  async function changeUnit(u: FoodUnit) {
+    if (u === unit) return
+    try {
+      await setProductUnit(product.barcode, u)
+      setProduct({ ...product, unit: u })
+      toast(u === 'ml' ? 'Este producto va por 100 ml' : 'Este producto va por 100 g')
+    } catch (e: any) { toast.err(e.message) }
+  }
 
   async function save() {
     setBusy(true)
     if (!dish) await ensureCached(product)
     const eaten = new Date(`${day}T${time}:00`)
     const { error } = await supabase.from('food_logs').insert({
-      day, meal, eaten_at: eaten.toISOString(), barcode: product.barcode, name: product.name, grams: g, ...m,
+      day, meal, eaten_at: eaten.toISOString(), barcode: product.barcode, name: product.name, grams: g, unit, ...m,
     })
     setBusy(false)
     if (error) return toast.err(error.message)
@@ -267,7 +282,7 @@ export function PortionForm({ product: product0, meal: meal0, day, defaultGrams,
         </div>
       </div>
       <div className="grid3">
-        <label className="field" style={{ gridColumn: 'span 2' }}><span>Cantidad (g)</span>
+        <label className="field" style={{ gridColumn: 'span 2' }}><span>Cantidad ({unit})</span>
           <input className="mono" inputMode="decimal" value={grams} placeholder={String(suggested)}
             onChange={(e) => setGrams(decimalText(e.target.value))} autoFocus />
         </label>
@@ -275,7 +290,7 @@ export function PortionForm({ product: product0, meal: meal0, day, defaultGrams,
       </div>
       <div className="chips">
         {[product.serving_g, 50, 100, 150, 200].filter((x, i, a) => x && a.indexOf(x) === i).map((x) => (
-          <button key={x} className={`chip ${g === x ? 'on' : ''}`} onClick={() => setGrams(String(x))}>{x} g{x === product.serving_g ? ' (ración)' : ''}</button>
+          <button key={x} className={`chip ${g === x ? 'on' : ''}`} onClick={() => setGrams(String(x))}>{x} {unit}{x === product.serving_g ? ' (ración)' : ''}</button>
         ))}
       </div>
       <div className="chips">
@@ -287,6 +302,12 @@ export function PortionForm({ product: product0, meal: meal0, day, defaultGrams,
         <div className="kpi"><span className="v" style={{ fontSize: 18, color: 'var(--carbs)' }}>{r1(m.carbs)}</span><span className="l">Carb</span></div>
         <div className="kpi"><span className="v" style={{ fontSize: 18, color: 'var(--fat)' }}>{r1(m.fat)}</span><span className="l">Grasa</span></div>
       </div>
+      {!dish && (
+        <div className="row between small">
+          <span className="muted">Valores nutricionales por</span>
+          <Seg value={unit} onChange={changeUnit} options={[{ id: 'g', label: '100 g' }, { id: 'ml', label: '100 ml' }]} />
+        </div>
+      )}
       {product.kcal_100g == null && <div className="small warn ic"><TriangleAlert size={14} /> Este producto no tiene kcal en Open Food Facts.</div>}
       <div className="grid2">
         <button className="btn-ghost" onClick={onBack}>‹ Volver</button>

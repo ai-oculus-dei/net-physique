@@ -7,6 +7,7 @@ import { ensureCached, macrosFor, recentProducts } from '../lib/food'
 import { projectPlan, suggestedGrams, type Macros, type PlanItem } from '../lib/planner'
 import { supabase } from '../lib/supabase'
 import { MEALS, isDish, type Meal, type Product } from '../lib/types'
+import { unitOf } from '../lib/units'
 
 type Candidate = Product & { lastGrams?: number }
 type Kind = 'all' | 'dish' | 'food'
@@ -87,7 +88,7 @@ export default function Planner({ open, onClose, day, consumed, target, onLogged
       for (const it of items) if (!isDish(it.product)) await ensureCached(it.product)
       const { error } = await supabase.from('food_logs').insert(items.map((it) => ({
         day, meal, eaten_at: eaten.toISOString(), barcode: it.product.barcode, name: it.product.name,
-        grams: it.grams, ...macrosFor(it.product, it.grams),
+        grams: it.grams, unit: unitOf(it.product), ...macrosFor(it.product, it.grams),
       })))
       if (error) throw error
       toast(`${items.length} alimentos registrados en ${MEALS.find((m) => m.id === meal)?.label}`)
@@ -146,7 +147,7 @@ export default function Planner({ open, onClose, day, consumed, target, onLogged
                     </div>
                     <NumInput className="mono plan-grams" value={it.grams} fallback={it.suggested} fallbackAsPlaceholder={it.grams === it.suggested}
                       onChange={(g) => setGrams(i, g)} aria-label="Gramos" />
-                    <span className="small muted">g</span>
+                    <span className="small muted">{unitOf(it.product)}</span>
                     <button className="btn-icon btn-ghost" aria-label="Quitar" onClick={() => setItems(items.filter((_, j) => j !== i))}><X size={16} /></button>
                   </div>
                 )
@@ -184,7 +185,7 @@ export default function Planner({ open, onClose, day, consumed, target, onLogged
                 </div>
                 <div className="mono small" style={{ textAlign: 'right' }}>
                   <span className={target && kcal > left ? 'warn' : ''}>{r0(kcal)}</span>
-                  <div className="faint tiny">{r0(g)} g</div>
+                  <div className="faint tiny">{r0(g)} {unitOf(p)}</div>
                 </div>
                 <button className={`btn-icon ${added ? 'btn-ghost' : ''}`} aria-label="Añadir al plan"
                   onClick={(e) => { e.stopPropagation(); add(p) }}>

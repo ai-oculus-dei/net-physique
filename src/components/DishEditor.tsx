@@ -27,7 +27,7 @@ export default function DishEditor({ dish, onClose, onSaved, onDeleted }: {
 
   function addIngredient(p: Product) {
     setPicking(false)
-    setD((o) => o && ({ ...o, items: [...o.items, { product: p, amount: DEFAULT_AMOUNT, unit: 'g', fresh: true }] }))
+    setD((o) => o && ({ ...o, items: [...o.items, { product: p, amount: DEFAULT_AMOUNT, unit: p.unit === 'ml' ? 'ml' : 'g', fresh: true }] }))
   }
   const setItem = (i: number, patch: Partial<{ amount: number; unit: Unit }>) =>
     setD((o) => o && ({ ...o, items: o.items.map((it, j) => (j === i ? { ...it, ...patch } : it)) }))

@@ -48,6 +48,8 @@ export interface Product {
   source?: 'off' | 'manual' | 'dish' | string
   /** solo platos: peso final cocinado (null = suma de ingredientes) */
   dish_total_g?: number | null
+  /** los valores son por 100 g ('g') o por 100 ml ('ml', líquidos) */
+  unit?: 'g' | 'ml'
 }
 
 export const isDish = (p: Pick<Product, 'source'>) => p.source === 'dish'
@@ -59,7 +61,9 @@ export interface FoodLog {
   meal: Meal
   barcode: string | null
   name: string
+  /** cantidad registrada, en la unidad de `unit` */
   grams: number
+  unit?: 'g' | 'ml'
   kcal: number
   protein: number
   carbs: number

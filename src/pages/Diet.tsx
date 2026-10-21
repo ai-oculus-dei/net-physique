@@ -138,7 +138,7 @@ export default function Diet() {
                     <div key={l.id} className="list-item">
                       <div className="grow">
                         <div className="ellipsis">{l.barcode?.startsWith('dish-') && <ChefHat size={13} color="var(--amber)" style={{ marginRight: 4, verticalAlign: -1 }} />}{l.name}</div>
-                        <div className="small muted mono">{hhmm(l.eaten_at)} · {r0(l.grams)} g · P{r0(l.protein)} C{r0(l.carbs)} G{r0(l.fat)}</div>
+                        <div className="small muted mono">{hhmm(l.eaten_at)} · {r0(l.grams)} {l.unit ?? 'g'} · P{r0(l.protein)} C{r0(l.carbs)} G{r0(l.fat)}</div>
                       </div>
                       <span className="mono">{r0(l.kcal)}</span>
                       <button className="btn-icon btn-ghost" onClick={() => remove(l.id)} aria-label="Eliminar"><X size={16} /></button>
