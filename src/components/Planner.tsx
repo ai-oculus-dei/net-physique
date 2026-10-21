@@ -8,6 +8,7 @@ import { projectPlan, suggestedGrams, type Macros, type PlanItem } from '../lib/
 import { supabase } from '../lib/supabase'
 import { MEALS, isDish, type Meal, type Product } from '../lib/types'
 import { unitOf } from '../lib/units'
+import { fuzzyFilter } from '../lib/search'
 
 type Candidate = Product & { lastGrams?: number }
 type Kind = 'all' | 'dish' | 'food'
@@ -68,9 +69,8 @@ export default function Planner({ open, onClose, day, consumed, target, onLogged
   const proj = useMemo(() => projectPlan(consumed, items, tgt), [consumed, items, tgt])
   const inPlan = new Set(items.map((i) => i.product.barcode))
 
-  const shown = (cands ?? []).filter((p) =>
-    (kind === 'all' || (kind === 'dish') === isDish(p)) &&
-    (p.name + ' ' + (p.brand ?? '')).toLowerCase().includes(q.trim().toLowerCase()))
+  const shown = fuzzyFilter((cands ?? []).filter((p) => kind === 'all' || (kind === 'dish') === isDish(p)),
+    q, (p) => `${p.name} ${p.brand ?? ''}`, (p) => p.name)
 
   function add(p: Candidate) {
     const g = suggestedGrams(p)

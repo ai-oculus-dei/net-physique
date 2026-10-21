@@ -340,3 +340,4 @@ input::placeholder { color: var(--faint); opacity: 1; }
 .cardio-tile:hover { border-color: var(--cyan); }
 .cardio-kcal { padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--cyan) 8%, var(--bg-2)); border: 1px solid color-mix(in srgb, var(--cyan) 25%, var(--line)); }
 .cardio-kcal b { color: var(--cyan); text-shadow: 0 0 10px color-mix(in srgb, var(--cyan) 45%, transparent); }
+.shared-ico { color: var(--violet); margin-right: 4px; vertical-align: -1px; }

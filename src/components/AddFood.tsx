@@ -1,10 +1,11 @@
-import { ChefHat, History, Package, PenLine, Pencil, Plus, ScanBarcode, Search, SearchX, TriangleAlert } from 'lucide-react'
+import { ChefHat, History, Users, Package, PenLine, Pencil, Plus, ScanBarcode, Search, SearchX, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import BarcodeScanner from './BarcodeScanner'
 import DishComposition from './DishComposition'
 import DishEditor from './DishEditor'
 import { decimalText, Empty, Seg, Sheet, num, r0, r1, toast } from './ui'
-import { ensureCached, lookupBarcode, macrosFor, recentProducts, saveManualProduct, searchProducts, setProductUnit } from '../lib/food'
+import { fuzzyFilter } from '../lib/search'
+import { ensureCached, lookupBarcode, type RecentProduct, macrosFor, recentProducts, saveManualProduct, searchProducts, setProductUnit } from '../lib/food'
 import { unitOf, type FoodUnit } from '../lib/units'
 import { listDishes } from '../lib/dishes'
 import { ymd } from '../lib/dates'
@@ -63,7 +64,7 @@ export function DishTag() {
   return <span className="tag dish-tag"><ChefHat size={11} /> Plato cocinado</span>
 }
 
-function ProductRow({ p, onClick, extra, action }: { p: Product; onClick: () => void; extra?: string; action?: React.ReactNode }) {
+function ProductRow({ p, onClick, extra, action, shared }: { p: Product; onClick: () => void; extra?: string; action?: React.ReactNode; shared?: boolean }) {
   const dish = isDish(p)
   return (
     <div className="list-item" onClick={onClick} style={{ cursor: 'pointer' }}>
@@ -72,6 +73,7 @@ function ProductRow({ p, onClick, extra, action }: { p: Product; onClick: () => 
       <div className="grow">
         <div className="ellipsis">{p.name}</div>
         <div className="small muted ellipsis">
+          {shared && <Users size={11} className="shared-ico" aria-label="Lo ha comido tu pareja" />}
           {dish ? <DishTag /> : p.brand ?? '—'}{extra ? ` · ${extra}` : ''}
         </div>
       </div>
@@ -134,17 +136,18 @@ function SearchTab({ onPick }: { onPick: (p: Product) => void }) {
 }
 
 function HistoryTab({ onPick }: { onPick: (p: Product, g?: number) => void }) {
-  const [list, setList] = useState<(Product & { lastGrams: number })[] | null>(null)
+  const [list, setList] = useState<RecentProduct[] | null>(null)
   const [f, setF] = useState('')
   useEffect(() => { recentProducts().then(setList) }, [])
   if (!list) return <div className="empty"><span className="spin" /></div>
   if (!list.length) return <Empty icon={History}>Aún no hay histórico. Escanea o busca tu primer producto.</Empty>
-  const shown = list.filter((p) => (p.name + (p.brand ?? '')).toLowerCase().includes(f.toLowerCase()))
+  const shown = fuzzyFilter(list, f, (p) => `${p.name} ${p.brand ?? ''}`, (p) => p.name)
   return (
     <div className="stack">
-      <input placeholder="Filtrar histórico…" value={f} onChange={(e) => setF(e.target.value)} />
+      <input placeholder="Buscar en el histórico (de los dos)…" value={f} onChange={(e) => setF(e.target.value)} />
       <div className="list">
-        {shown.map((p) => <ProductRow key={p.barcode} p={p} extra={`últ. ${r0(p.lastGrams)} ${unitOf(p)}`} onClick={() => onPick(p, p.lastGrams)} />)}
+        {shown.map((p) => <ProductRow key={p.barcode} p={p} extra={`últ. ${r0(p.lastGrams)} ${unitOf(p)}`}
+          shared={!p.mine} onClick={() => onPick(p, p.lastGrams)} />)}
       </div>
     </div>
   )
@@ -158,7 +161,7 @@ function DishesTab({ onPick }: { onPick: (p: Product) => void }) {
   const load = () => listDishes().then(setList)
   useEffect(() => { load() }, [])
 
-  const shown = (list ?? []).filter((p) => p.name.toLowerCase().includes(f.toLowerCase()))
+  const shown = fuzzyFilter(list ?? [], f, (p) => p.name)
   return (
     <div className="stack">
       <button className="btn-primary" onClick={() => setEditing('new')}><Plus size={17} /> Crear plato</button>

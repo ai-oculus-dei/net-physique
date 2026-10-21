@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { MUSCLES } from './muscles'
+import { searchExercises } from './exerciseSearch'
 import type { Exercise } from './types'
 
 let cache: Exercise[] | null = null
@@ -19,13 +20,13 @@ export async function allExercises(force = false): Promise<Exercise[]> {
 }
 
 export function filterExercises(list: Exercise[], q: string, muscle: string | null, group: string | null) {
-  const s = q.trim().toLowerCase()
-  return list.filter((e) => {
-    if (s && !e.name.toLowerCase().includes(s)) return false
+  const filtered = list.filter((e) => {
     if (muscle && !e.primary_muscles.includes(muscle) && !e.secondary_muscles.includes(muscle)) return false
     if (group && !e.primary_muscles.some((m) => (MUSCLES as Record<string, { group: string }>)[m]?.group === group)) return false
     return true
   })
+  // búsqueda en español, sin tildes, palabra a palabra y con erratas (lib/exerciseSearch)
+  return searchExercises(filtered, q)
 }
 
 export async function createCustomExercise(e: Pick<Exercise, 'name' | 'primary_muscles' | 'secondary_muscles' | 'equipment' | 'category' | 'instructions'>) {

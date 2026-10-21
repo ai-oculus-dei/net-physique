@@ -34,7 +34,7 @@ export default function ExercisePicker({ open, onClose, onPick, initialMuscle }:
         <CustomForm name={q} onBack={() => setCreating(false)} onCreated={(e) => { toast('Ejercicio guardado'); onPick(e) }} />
       ) : (
         <div className="stack">
-          <input placeholder="Buscar por nombre (en inglés: squat, press, curl…)" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input placeholder="Buscar: sentadilla, press banca, remo con barra…" value={q} onChange={(e) => setQ(e.target.value)} />
           <div className="chips">
             {GROUPS.map((g) => (
               <button key={g} className={`chip ${group === g ? 'on' : ''}`} onClick={() => { setGroup(group === g ? null : g); setMuscle(null) }}>
