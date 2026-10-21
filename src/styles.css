@@ -341,3 +341,9 @@ input::placeholder { color: var(--faint); opacity: 1; }
 .cardio-kcal { padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--cyan) 8%, var(--bg-2)); border: 1px solid color-mix(in srgb, var(--cyan) 25%, var(--line)); }
 .cardio-kcal b { color: var(--cyan); text-shadow: 0 0 10px color-mix(in srgb, var(--cyan) 45%, transparent); }
 .shared-ico { color: var(--violet); margin-right: 4px; vertical-align: -1px; }
+
+/* Botón flotante principal (Añadir en Diet, Sesión en Training) */
+.fab { position: fixed; right: 18px; bottom: calc(96px + env(safe-area-inset-bottom)); border-radius: 18px; padding: 14px 18px; z-index: 30; box-shadow: var(--glow); }
+/* botón apagado: sin cambios pendientes */
+button.btn-ghost:disabled { color: var(--faint); border-color: var(--line); opacity: 1; }
+.shell:has(.fab) { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }

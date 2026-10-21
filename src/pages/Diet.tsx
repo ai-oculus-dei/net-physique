@@ -152,8 +152,7 @@ export default function Diet() {
         {logs.length === 0 && <Empty icon={Utensils}>Nada registrado este día. Pulsa + en una comida.</Empty>}
       </div>
 
-      <button className="btn-primary" onClick={() => setAdding(mealForNow())}
-        style={{ position: 'fixed', right: 18, bottom: 'calc(96px + env(safe-area-inset-bottom))', borderRadius: 18, padding: '14px 18px', zIndex: 30, boxShadow: 'var(--glow)' }}>
+      <button className="btn-primary fab" onClick={() => setAdding(mealForNow())}>
         <ScanBarcode size={18} /> Añadir
       </button>
 

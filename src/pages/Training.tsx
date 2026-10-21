@@ -22,6 +22,8 @@ export default function Training() {
   const [draft, setDraft] = useState<WorkoutDraft | null>(null)
   const [kg, setKg] = useState(Number(profile.weight_kg ?? 70))
   const [steps, setSteps] = useState('')
+  // pasos guardados en la base de datos ese día (para saber si hay cambios sin guardar)
+  const [savedSteps, setSavedSteps] = useState<number | null>(null)
   const [browse, setBrowse] = useState<string | null | undefined>(undefined)
   const [info, setInfo] = useState<Exercise | null>(null)
   const [recent, setRecent] = useState<Workout[]>([])
@@ -30,6 +32,7 @@ export default function Training() {
     setWeek(await weekWorkouts(day))
     const { data } = await supabase.from('steps').select('steps').eq('day', day).maybeSingle()
     setSteps(data ? String(data.steps) : '')
+    setSavedSteps(data ? Number(data.steps) : null)
   }, [day])
   useEffect(() => { load() }, [load])
   useEffect(() => { latestWeight(profile, day).then(setKg) }, [profile, day])
@@ -48,7 +51,9 @@ export default function Training() {
     if (n == null) return
     const kcal = Math.round(stepsKcal(n, kg, Number(profile.height_cm ?? 170)))
     const { error } = await supabase.from('steps').upsert({ day, steps: n, kcal })
-    error ? toast.err(error.message) : toast(`${n} pasos · ${kcal} kcal`)
+    if (error) return toast.err(error.message)
+    setSavedSteps(n)
+    toast(`${n} pasos · ${kcal} kcal`)
   }
 
   // Marcar ejercicio hecho directamente desde la lista (plan → registro)
@@ -109,7 +114,9 @@ export default function Training() {
           <h2><Footprints size={14} /> Pasos</h2>
           <div className="row">
             <input className="mono grow" inputMode="numeric" placeholder="0" value={steps} onChange={(e) => setSteps(decimalText(e.target.value, { decimal: false }))} />
-            <button className="btn-primary" onClick={saveSteps}>Guardar</button>
+            {num(steps) === savedSteps || num(steps) == null
+              ? <button className="btn-ghost" disabled>{savedSteps != null && num(steps) === savedSteps ? 'Guardado' : 'Guardar'}</button>
+              : <button className="btn-primary" onClick={saveSteps}>Guardar</button>}
           </div>
           <div style={{ marginTop: 10 }}><Bar value={stepsN} max={profile.steps_goal} color="var(--lime)" /></div>
           <div className="row between small muted mono" style={{ marginTop: 6 }}>
@@ -122,7 +129,6 @@ export default function Training() {
           <h2 className="tiny muted" style={{ margin: 0 }}>Sesiones · {fmtDay(day)}</h2>
           <div className="row" style={{ gap: 6 }}>
             <button className="btn-sm" onClick={() => setBrowse(null)}><BookOpen size={15} /> Catálogo</button>
-            <button className="btn-sm btn-primary" onClick={() => setDraft(newDraft())}><Plus size={15} /> Sesión</button>
           </div>
         </div>
 
@@ -172,6 +178,10 @@ export default function Training() {
           </div>
         )}
       </div>
+
+      <button className="btn-primary fab" onClick={() => setDraft(newDraft())}>
+        <Plus size={18} /> Sesión
+      </button>
 
       {draft && (
         <WorkoutEditor draft={draft} body={body} weekLoad={doneLoad(week, draft.id)}
