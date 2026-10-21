@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
-import { workoutKcal } from './energy'
+import { cardioSetKcal, isCardio, workoutKcal } from './energy'
+import type { Body } from './cardio'
 import { addDays, weekStart } from './dates'
 import { muscleLoad } from './muscles'
 import type { Workout, WorkoutSet } from './types'
@@ -35,12 +36,12 @@ export interface WorkoutDraft {
   items: WorkoutSet[]
 }
 
-export async function saveWorkout(d: WorkoutDraft, kg: number): Promise<number> {
+export async function saveWorkout(d: WorkoutDraft, body: Body): Promise<number> {
   const done = d.items.filter((s) => s.done)
   const row = {
     day: d.day, title: d.title || null, intensity: d.intensity, duration_min: d.duration_min, notes: d.notes,
     planned: done.length === 0,
-    kcal: Math.round(workoutKcal(done, kg, d.intensity, done.length === d.items.length ? d.duration_min : null)),
+    kcal: Math.round(workoutKcal(done, body, d.intensity, done.length === d.items.length ? d.duration_min : null)),
   }
   let id = d.id
   if (id) {
@@ -53,10 +54,17 @@ export async function saveWorkout(d: WorkoutDraft, kg: number): Promise<number> 
     id = data.id as number
   }
   if (d.items.length) {
-    const { error } = await supabase.from('workout_sets').insert(d.items.map((s, i) => ({
-      workout_id: id, exercise_id: s.exercise_id, position: i, sets: s.sets, reps: s.reps,
-      weight_kg: s.weight_kg, minutes: s.minutes, done: s.done,
-    })))
+    const { error } = await supabase.from('workout_sets').insert(d.items.map((s, i) => {
+      const c = isCardio(s) ? cardioSetKcal(s, body) : null
+      return {
+        workout_id: id, exercise_id: s.exercise_id, position: i, sets: s.sets, reps: s.reps,
+        weight_kg: s.weight_kg, minutes: s.minutes, done: s.done,
+        intensity: c ? s.intensity ?? 'moderate' : null,
+        distance_km: c ? s.distance_km ?? null : null, avg_watts: c ? s.avg_watts ?? null : null,
+        avg_hr: c ? s.avg_hr ?? null : null, machine_kcal: c ? s.machine_kcal ?? null : null,
+        kcal: c ? Math.round(c.net) : null, kcal_method: c ? c.method : null,
+      }
+    }))
     if (error) throw error
   }
   return id!
@@ -75,5 +83,35 @@ export function draftFrom(w: Workout, asPlanFor?: string): WorkoutDraft {
     duration_min: asPlanFor ? null : w.duration_min,
     notes: w.notes,
     items: w.workout_sets.map((s) => ({ ...s, id: undefined, done: asPlanFor ? false : s.done })),
+  }
+}
+
+export interface CardioWeek {
+  minutes: number
+  kcal: number
+  sessions: number
+  byActivity: { name: string; minutes: number; kcal: number; km: number }[]
+}
+
+/** Resumen del cardio hecho en la semana (minutos y kcal netas por actividad) */
+export function cardioWeek(ws: Workout[]): CardioWeek {
+  const by = new Map<string, { name: string; minutes: number; kcal: number; km: number }>()
+  let sessions = 0
+  for (const w of ws) {
+    for (const s of w.workout_sets) {
+      if (!s.done || !isCardio(s)) continue
+      sessions++
+      const a = by.get(s.exercise_id) ?? { name: s.exercise.name, minutes: 0, kcal: 0, km: 0 }
+      a.minutes += Number(s.minutes ?? 0)
+      a.kcal += Number(s.kcal ?? 0)
+      a.km += Number(s.distance_km ?? 0)
+      by.set(s.exercise_id, a)
+    }
+  }
+  const byActivity = [...by.values()].sort((a, b) => b.minutes - a.minutes)
+  return {
+    minutes: byActivity.reduce((a, x) => a + x.minutes, 0),
+    kcal: byActivity.reduce((a, x) => a + x.kcal, 0),
+    sessions, byActivity,
   }
 }

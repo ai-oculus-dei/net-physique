@@ -1,17 +1,18 @@
-import { BookOpen, CalendarClock, CircleCheck, Dumbbell, Flame, Footprints, Plus, Repeat, Sofa } from 'lucide-react'
+import { BookOpen, CalendarClock, CircleCheck, Dumbbell, Flame, Footprints, HeartPulse, Plus, Repeat, Sofa } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import BodyHeatmap from '../components/BodyHeatmap'
 import DayPicker from '../components/DayPicker'
 import ExercisePicker, { ExerciseDetail } from '../components/ExercisePicker'
 import WorkoutEditor from '../components/WorkoutEditor'
+import { CARDIO_ICON } from '../components/Cardio'
 import { decimalText, Bar, Empty, Sheet, num, r0, toast } from '../components/ui'
-import { latestWeight } from '../lib/energy'
+import { bodyFrom, isCardio, latestWeight } from '../lib/energy'
 import { fmtDay, ymd } from '../lib/dates'
 import { stepsKcal } from '../lib/formulas'
 import { muscleEs } from '../lib/muscles'
 import { supabase } from '../lib/supabase'
 import type { Exercise, Workout } from '../lib/types'
-import { doneLoad, draftFrom, recentWorkouts, saveWorkout, weekWorkouts, type WorkoutDraft } from '../lib/workouts'
+import { cardioWeek, doneLoad, draftFrom, recentWorkouts, saveWorkout, weekWorkouts, type WorkoutDraft } from '../lib/workouts'
 import { useApp } from '../stores/app'
 
 export default function Training() {
@@ -37,6 +38,8 @@ export default function Training() {
   }, [week])
 
   const load7 = useMemo(() => doneLoad(week), [week])
+  const cardio7 = useMemo(() => cardioWeek(week), [week])
+  const body = useMemo(() => bodyFrom(profile, kg), [profile, kg])
   const today = week.filter((w) => w.day === day)
   const totalSets = Object.values(load7).reduce((a, b) => a + b, 0)
 
@@ -52,7 +55,7 @@ export default function Training() {
   async function toggle(w: Workout, idx: number) {
     const d = draftFrom(w)
     d.items[idx] = { ...d.items[idx], done: !d.items[idx].done }
-    await saveWorkout(d, kg)
+    await saveWorkout(d, body)
     load()
   }
 
@@ -76,6 +79,30 @@ export default function Training() {
             <span className="tiny faint">toca un músculo</span>
           </div>
           <BodyHeatmap load={load7} onPick={(m) => setBrowse(m)} />
+        </div>
+
+        <div className="card">
+          <div className="row between">
+            <h2 style={{ margin: 0 }}><HeartPulse size={14} /> Cardio semanal</h2>
+            <span className="mono small">
+              <b>{r0(cardio7.minutes)}</b><span className="muted"> min · </span><b>{r0(cardio7.kcal)}</b><span className="muted"> kcal</span>
+            </span>
+          </div>
+          {cardio7.byActivity.length === 0
+            ? <div className="small muted" style={{ marginTop: 8 }}>Sin cardio registrado esta semana.</div>
+            : (
+              <div className="stack" style={{ gap: 8, marginTop: 10 }}>
+                {cardio7.byActivity.map((a) => (
+                  <div key={a.name} className="stack" style={{ gap: 4 }}>
+                    <div className="row between small">
+                      <span>{a.name}</span>
+                      <span className="mono muted">{r0(a.minutes)} min{a.km ? ` · ${Math.round(a.km * 10) / 10} km` : ''} · {r0(a.kcal)} kcal</span>
+                    </div>
+                    <Bar value={a.minutes} max={Math.max(...cardio7.byActivity.map((x) => x.minutes))} color="var(--cyan)" />
+                  </div>
+                ))}
+              </div>
+            )}
         </div>
 
         <div className="card">
@@ -116,10 +143,15 @@ export default function Training() {
                   <div key={s.id} className="list-item">
                     <input type="checkbox" checked={s.done} onChange={() => toggle(w, i)} />
                     <div className="grow" onClick={() => setInfo(s.exercise)} style={{ cursor: 'pointer' }}>
-                      <div className="ellipsis">{s.exercise.name}</div>
-                      <div className="small muted">{s.exercise.primary_muscles.map(muscleEs).join(', ')}</div>
+                      <div className="ellipsis">
+                        {isCardio(s) && (() => { const I = CARDIO_ICON[s.exercise_id] ?? HeartPulse; return <I size={14} color="var(--cyan)" style={{ marginRight: 5, verticalAlign: -2 }} /> })()}
+                        {s.exercise.name}
+                      </div>
+                      <div className="small muted">{isCardio(s) ? 'Cardio' : s.exercise.primary_muscles.map(muscleEs).join(', ')}</div>
                     </div>
-                    <span className="mono small">{s.minutes ? `${s.minutes}′` : `${s.sets}×${s.reps}${s.weight_kg ? ` @${s.weight_kg}` : ''}`}</span>
+                    <span className="mono small">{isCardio(s)
+                      ? `${s.minutes ?? 0}′${s.distance_km ? ` · ${s.distance_km} km` : ''}${s.kcal ? ` · ${r0(s.kcal)} kcal` : ''}`
+                      : `${s.sets}×${s.reps}${s.weight_kg ? ` @${s.weight_kg}` : ''}`}</span>
                   </div>
                 ))}
               </div>
@@ -142,7 +174,7 @@ export default function Training() {
       </div>
 
       {draft && (
-        <WorkoutEditor draft={draft} kg={kg} weekLoad={doneLoad(week, draft.id)}
+        <WorkoutEditor draft={draft} body={body} weekLoad={doneLoad(week, draft.id)}
           onClose={() => setDraft(null)} onSaved={() => { setDraft(null); load() }} />
       )}
       <ExercisePicker open={browse !== undefined} initialMuscle={browse ?? null} onClose={() => setBrowse(undefined)}

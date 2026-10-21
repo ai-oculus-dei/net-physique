@@ -1,6 +1,7 @@
 // Exportación a CSV: una fila por alimento (Diet) y una por ejercicio (Training).
 // Las columnas del día (objetivo, peso, pasos) se repiten en cada fila de ese día.
 import { muscleEs } from './muscles'
+import { METHOD_LABEL, type CardioMethod } from './cardio'
 import { MEALS } from './types'
 
 export interface ExportOptions { diet: boolean; training: boolean; sep: ',' | ';' }
@@ -12,6 +13,9 @@ export interface ExportFood {
 export interface ExportSet {
   day: string; session: string | null; exercise: string; sets: number; reps: number
   weightKg: number | null; minutes: number | null; primary: string[]; secondary: string[]
+  // cardio
+  cardio?: boolean; distanceKm?: number | null; watts?: number | null; avgHr?: number | null
+  kcal?: number | null; kcalMethod?: string | null
 }
 export interface ExportInput {
   foods: ExportFood[]
@@ -22,7 +26,7 @@ export interface ExportInput {
 }
 
 const DIET_COLS = ['hora', 'comida', 'alimento', 'gramos', 'kcal', 'proteinas_g', 'grasas_g', 'carbohidratos_g', 'kcal_objetivo_dia', 'peso_dia_kg']
-const TRAINING_COLS = ['sesion', 'ejercicio', 'series', 'repeticiones', 'peso_levantado_kg', 'minutos', 'musculos', 'pasos_dia']
+const TRAINING_COLS = ['sesion', 'ejercicio', 'series', 'repeticiones', 'peso_levantado_kg', 'minutos', 'distancia_km', 'vatios_medios', 'fc_media', 'kcal_actividad', 'metodo_kcal', 'musculos', 'pasos_dia']
 
 type Cell = string | number | null | undefined
 const r1 = (n: number | null | undefined) => (n == null ? null : Math.round(n * 10) / 10)
@@ -60,12 +64,15 @@ export function buildExportRows(input: ExportInput, o: ExportOptions): Cell[][] 
   if (o.training) {
     const withSets = new Set(input.sets.map((s) => s.day))
     for (const s of input.sets) {
-      const cardio = s.minutes != null
+      const cardio = s.cardio ?? s.minutes != null
       out.push({
         day: s.day, order: 1, row: row({
           tipo: 'Training', ...dayCols(s.day), sesion: s.session, ejercicio: s.exercise,
           series: cardio ? null : s.sets, repeticiones: cardio ? null : s.reps,
-          peso_levantado_kg: r1(s.weightKg), minutos: r1(s.minutes), musculos: muscles(s),
+          peso_levantado_kg: r1(s.weightKg), minutos: r1(s.minutes),
+          distancia_km: r1(s.distanceKm), vatios_medios: s.watts ?? null, fc_media: s.avgHr ?? null,
+          kcal_actividad: r1(s.kcal), metodo_kcal: s.kcalMethod ? METHOD_LABEL[s.kcalMethod as CardioMethod] ?? s.kcalMethod : null,
+          musculos: cardio ? null : muscles(s),
         }),
       })
     }

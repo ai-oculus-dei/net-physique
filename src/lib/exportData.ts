@@ -12,7 +12,7 @@ export async function loadExportInput(profile: Profile, from: string, to: string
       .gte('day', from).lte('day', to).order('day').order('eaten_at') : empty,
     o.diet ? supabase.from('daily_energy').select('day,target_kcal').gte('day', from).lte('day', to) : empty,
     o.diet ? supabase.from('weights').select('day,kg').gte('day', from).lte('day', to) : empty,
-    o.training ? supabase.from('workouts').select('day,title,created_at,workout_sets(position,sets,reps,weight_kg,minutes,done,exercise:exercises(name,primary_muscles,secondary_muscles))')
+    o.training ? supabase.from('workouts').select('day,title,created_at,workout_sets(position,sets,reps,weight_kg,minutes,done,distance_km,avg_watts,avg_hr,kcal,kcal_method,exercise:exercises(name,category,primary_muscles,secondary_muscles))')
       .eq('planned', false).gte('day', from).lte('day', to).order('day').order('created_at') : empty,
     o.training ? supabase.from('steps').select('day,steps').gte('day', from).lte('day', to) : empty,
   ])
@@ -35,6 +35,9 @@ export async function loadExportInput(profile: Profile, from: string, to: string
       day: w.day, session: w.title, exercise: s.exercise.name, sets: s.sets, reps: s.reps,
       weightKg: s.weight_kg != null ? Number(s.weight_kg) : null, minutes: s.minutes != null ? Number(s.minutes) : null,
       primary: s.exercise.primary_muscles ?? [], secondary: s.exercise.secondary_muscles ?? [],
+      cardio: s.exercise.category === 'cardio' || s.minutes != null,
+      distanceKm: s.distance_km != null ? Number(s.distance_km) : null, watts: s.avg_watts != null ? Number(s.avg_watts) : null,
+      avgHr: s.avg_hr ?? null, kcal: s.kcal != null ? Number(s.kcal) : null, kcalMethod: s.kcal_method ?? null,
     })))
 
   return {

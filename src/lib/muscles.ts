@@ -34,12 +34,17 @@ export const EQUIPMENT_ES: Record<string, string> = {
 
 export const IMG_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/'
 
-export interface SetLike { sets: number; exercise: { primary_muscles: string[]; secondary_muscles: string[] } }
+export interface SetLike {
+  sets: number
+  minutes?: number | null
+  exercise: { primary_muscles: string[]; secondary_muscles: string[]; category?: string | null }
+}
 
-/** Carga por músculo: series directas = 1, secundarias = 0.5 */
+/** Carga por músculo: series directas = 1, secundarias = 0.5. El cardio no cuenta (se mide en minutos aparte). */
 export function muscleLoad(items: SetLike[]): Record<string, number> {
   const load: Record<string, number> = {}
   for (const it of items) {
+    if (it.exercise.category === 'cardio' || it.minutes != null) continue
     for (const m of it.exercise.primary_muscles) load[m] = (load[m] ?? 0) + it.sets
     for (const m of it.exercise.secondary_muscles) load[m] = (load[m] ?? 0) + it.sets * 0.5
   }

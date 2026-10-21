@@ -6,6 +6,7 @@ import {
   bmr, dynamicTdee, macroTargets, metKcal, setsMinutes, stepsKcal, type MacroTargets,
 } from './formulas'
 import type { Profile, WorkoutSet } from './types'
+import { cardioKcal, type Body, type CardioResult } from './cardio'
 
 export interface DayEnergy extends MacroTargets {
   bmr: number
@@ -17,17 +18,45 @@ export interface DayEnergy extends MacroTargets {
   suggestedFactor: number | null
 }
 
-/** kcal estimadas de un entreno: duración real si existe; si no, suma por ejercicio */
-export function workoutKcal(sets: WorkoutSet[], kg: number, intensity: keyof typeof STRENGTH_MET, durationMin?: number | null) {
-  if (durationMin && durationMin > 0) return metKcal(STRENGTH_MET[intensity], kg, durationMin)
-  return sets.reduce((acc, s) => {
-    const cat = s.exercise.category ?? 'strength'
-    if (cat === 'cardio' || s.minutes) {
-      return acc + metKcal(MET_BY_CATEGORY.cardio, kg, s.minutes ?? 10)
+/** El ejercicio es cardio (actividad de la app o cardio del catálogo) */
+export const isCardio = (s: Pick<WorkoutSet, 'exercise' | 'minutes'>) => s.exercise.category === 'cardio' || s.minutes != null
+
+/** kcal netas de una actividad de cardio del entreno */
+export function cardioSetKcal(s: WorkoutSet, body: Body): CardioResult {
+  return cardioKcal({
+    exerciseId: s.exercise_id, minutes: Number(s.minutes ?? 0), intensity: s.intensity,
+    distanceKm: s.distance_km, watts: s.avg_watts, avgHr: s.avg_hr, machineKcal: s.machine_kcal,
+  }, body)
+}
+
+/**
+ * kcal NETAS de un entreno (sin el reposo, que ya cuenta el basal × 1.2):
+ * cardio por actividad (lib/cardio) + fuerza por MET − 1.
+ * La fuerza usa la duración real de la sesión (menos los minutos de cardio) si se indica; si no, se estima por series.
+ */
+export function workoutKcal(sets: WorkoutSet[], body: Body, intensity: keyof typeof STRENGTH_MET, durationMin?: number | null) {
+  const cardio = sets.filter(isCardio)
+  const strength = sets.filter((s) => !isCardio(s))
+  const cardioK = cardio.reduce((a, s) => a + cardioSetKcal(s, body).net, 0)
+  const cardioMin = cardio.reduce((a, s) => a + Number(s.minutes ?? 0), 0)
+  let strengthK = 0
+  if (strength.length) {
+    if (durationMin && durationMin > 0) {
+      strengthK = metKcal(STRENGTH_MET[intensity] - 1, body.kg, Math.max(0, durationMin - cardioMin))
+    } else {
+      strengthK = strength.reduce((a, s) => {
+        const cat = s.exercise.category ?? 'strength'
+        const met = cat === 'strength' ? STRENGTH_MET[intensity] : MET_BY_CATEGORY[cat] ?? STRENGTH_MET[intensity]
+        return a + metKcal(met - 1, body.kg, setsMinutes(s.sets, s.reps))
+      }, 0)
     }
-    const met = cat === 'strength' ? STRENGTH_MET[intensity] : MET_BY_CATEGORY[cat] ?? STRENGTH_MET[intensity]
-    return acc + metKcal(met, kg, setsMinutes(s.sets, s.reps))
-  }, 0)
+  }
+  return cardioK + strengthK
+}
+
+/** Datos corporales para los cálculos de gasto */
+export function bodyFrom(profile: Pick<Profile, 'sex' | 'birthdate'>, kg: number): Body {
+  return { kg, sex: profile.sex ?? 'male', age: profile.birthdate ? ageFromBirthdate(profile.birthdate) : 30 }
 }
 
 export async function latestWeight(profile: Profile, day: string): Promise<number> {

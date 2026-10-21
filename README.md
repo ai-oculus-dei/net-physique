@@ -55,7 +55,8 @@ npm test
 | Basal | Mifflin-St Jeor; Katch-McArdle si hay % grasa de los últimos 60 días |
 | Gasto dinámico | basal × 1.2 + kcal pasos + kcal entreno |
 | Factor adaptativo | media 14 d de (gasto dinámico / basal), acotada [1.2, 2.0], mín. 7 días con pasos |
-| Entreno | MET × kg × h (Compendium 2024); fuerza 3.5/5/6, duración estimada = series × (reps × 3 s + 90 s) |
+| Fuerza | (MET − 1) × kg × h (kcal netas; Compendium 2024); MET 3.5/5/6, duración real o estimada = series × (reps × 3 s + 90 s) |
+| Cardio | kcal netas (bruto − 1 MET de reposo). Prioridad: vatios (remo/SkiErg: Concept2 4·W·0.8604+300 kcal/h; bici: W·t/21 % eficiencia) > kcal de la máquina > FC media (Keytel 2005) > running km+tiempo (MET por velocidad) > MET por intensidad |
 | Pasos | zancada = altura × 0.415; 0.5 kcal/kg/km |
 | Macros | P y G en g/kg; C = (kcal − 4P − 9G) / 4 |
 | % grasa | Jackson-Pollock 3/7 + Siri; US Navy; impedancia manual |

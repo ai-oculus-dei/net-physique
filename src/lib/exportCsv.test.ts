@@ -8,7 +8,8 @@ const input: ExportInput = {
   ],
   sets: [
     { day: '2026-10-20', session: 'Pierna', exercise: 'Barbell Squat', sets: 4, reps: 8, weightKg: 100, minutes: null, primary: ['quadriceps'], secondary: ['glutes'] },
-    { day: '2026-10-20', session: 'Pierna', exercise: 'Running, Treadmill', sets: 1, reps: 1, weightKg: null, minutes: 20, primary: ['quadriceps'], secondary: [] },
+    { day: '2026-10-20', session: 'Pierna', exercise: 'Running', sets: 1, reps: 1, weightKg: null, minutes: 20, primary: ['quadriceps'], secondary: [],
+      cardio: true, distanceKm: 4.2, avgHr: 152, kcal: 251.4, kcalMethod: 'hr' },
   ],
   targets: { '2026-10-19': 2100, '2026-10-20': 2050 },
   weights: { '2026-10-20': 80.35 },
@@ -20,7 +21,7 @@ describe('exportación CSV', () => {
     expect(exportHeaders({ diet: true, training: false, sep: ',' })).toEqual(
       ['tipo', 'fecha', 'hora', 'comida', 'alimento', 'gramos', 'kcal', 'proteinas_g', 'grasas_g', 'carbohidratos_g', 'kcal_objetivo_dia', 'peso_dia_kg'])
     expect(exportHeaders({ diet: false, training: true, sep: ',' })).toEqual(
-      ['tipo', 'fecha', 'sesion', 'ejercicio', 'series', 'repeticiones', 'peso_levantado_kg', 'minutos', 'musculos', 'pasos_dia'])
+      ['tipo', 'fecha', 'sesion', 'ejercicio', 'series', 'repeticiones', 'peso_levantado_kg', 'minutos', 'distancia_km', 'vatios_medios', 'fc_media', 'kcal_actividad', 'metodo_kcal', 'musculos', 'pasos_dia'])
   })
 
   it('solo Diet: filas por alimento, ordenadas por fecha, con objetivo y peso del día', () => {
@@ -33,10 +34,10 @@ describe('exportación CSV', () => {
   it('solo Training: ejercicios con músculos y pasos; día solo con pasos incluido', () => {
     const rows = buildExportRows(input, { diet: false, training: true, sep: ',' })
     expect(rows).toHaveLength(3)
-    expect(rows[0]).toEqual(['Training', '2026-10-18', null, null, null, null, null, null, null, 7000])
-    expect(rows[1]).toEqual(['Training', '2026-10-20', 'Pierna', 'Barbell Squat', 4, 8, 100, null, 'Cuádriceps / Glúteos (sec.)', 9500])
-    // cardio: sin series/reps, con minutos
-    expect(rows[2]).toEqual(['Training', '2026-10-20', 'Pierna', 'Running, Treadmill', null, null, null, 20, 'Cuádriceps', 9500])
+    expect(rows[0]).toEqual(['Training', '2026-10-18', null, null, null, null, null, null, null, null, null, null, null, null, 7000])
+    expect(rows[1]).toEqual(['Training', '2026-10-20', 'Pierna', 'Barbell Squat', 4, 8, 100, null, null, null, null, null, null, 'Cuádriceps / Glúteos (sec.)', 9500])
+    // cardio: sin series/reps ni músculos; con minutos, km, FC, kcal y método
+    expect(rows[2]).toEqual(['Training', '2026-10-20', 'Pierna', 'Running', null, null, null, 20, 4.2, null, 152, 251.4, 'por pulsaciones', null, 9500])
   })
 
   it('ambos: Diet antes que Training dentro del mismo día', () => {

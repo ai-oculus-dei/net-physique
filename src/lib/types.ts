@@ -92,6 +92,15 @@ export interface WorkoutSet {
   minutes: number | null
   done: boolean
   exercise: Exercise
+  // solo cardio
+  intensity?: 'light' | 'moderate' | 'vigorous' | null
+  distance_km?: number | null
+  avg_watts?: number | null
+  avg_hr?: number | null
+  machine_kcal?: number | null
+  /** kcal netas calculadas (cardio) */
+  kcal?: number | null
+  kcal_method?: string | null
 }
 
 export interface Workout {
