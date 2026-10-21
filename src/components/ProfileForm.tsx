@@ -1,5 +1,5 @@
 import { Target, User, Zap } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { ACTIVITY_FACTORS, ageFromBirthdate, bmr, macroTargets } from '../lib/formulas'
 import type { Profile } from '../lib/types'
 import { NumInput, Seg, r0 } from './ui'
@@ -18,16 +18,33 @@ const MODE_HELP: Record<string, string> = {
 
 export type ProfileDraft = Partial<Profile>
 
-export default function ProfileForm({ initial, onSubmit, submitLabel }: {
+/** Valores recomendados (iguales a los predeterminados de la base de datos) */
+const DEFAULTS = {
+  protein_g_kg: 2, fat_g_kg: 0.9, deficit_kcal: 400, kcal_tolerance_pct: 10, protein_min_pct: 90, steps_goal: 8000,
+} as const
+
+export default function ProfileForm({ initial, onSubmit, submitLabel, requireChanges = false, defaultsAsPlaceholders = false, beforeSubmit }: {
   initial: Partial<Profile>
-  onSubmit: (p: ProfileDraft) => Promise<void> | void
+  /** devuelve false si no se pudo guardar */
+  onSubmit: (p: ProfileDraft) => Promise<boolean | void> | boolean | void
   submitLabel: string
+  /** el botón solo se activa si hay cambios sin guardar */
+  requireChanges?: boolean
+  /** mostrar los valores recomendados en gris en lugar de escritos (configuración inicial) */
+  defaultsAsPlaceholders?: boolean
+  /** contenido justo antes del botón de guardar */
+  beforeSubmit?: ReactNode
 }) {
-  const [p, setP] = useState<ProfileDraft>({
-    sex: 'male', activity_level: 2, energy_mode: 'adaptive', protein_g_kg: 2, fat_g_kg: 0.9, deficit_kcal: 400,
-    kcal_tolerance_pct: 10, protein_min_pct: 90, steps_goal: 8000, ...initial,
+  const [p, setP] = useState<ProfileDraft>(() => {
+    // el tema se guarda aparte (selector de Ajustes): no se arrastra un valor antiguo al guardar el perfil
+    const { theme: _t, updated_at: _u, ...rest } = initial as ProfileDraft & { updated_at?: string }
+    return { sex: 'male', activity_level: 2, energy_mode: 'adaptive', ...DEFAULTS, ...rest }
   })
+  // última versión guardada, para saber si hay cambios pendientes
+  const [saved, setSaved] = useState<ProfileDraft>(p)
+  const dirty = (Object.keys(p) as (keyof Profile)[]).some((k) => String(p[k] ?? '') !== String(saved[k] ?? ''))
   const [busy, setBusy] = useState(false)
+  const def = (k: keyof typeof DEFAULTS) => ({ fallback: DEFAULTS[k], fallbackAsPlaceholder: defaultsAsPlaceholders })
   const set = <K extends keyof Profile>(k: K, v: Profile[K] | null) => setP((o) => ({ ...o, [k]: v }))
   const n = (k: keyof Profile) => (p[k] == null ? '' : String(p[k]))
 
@@ -42,7 +59,8 @@ export default function ProfileForm({ initial, onSubmit, submitLabel }: {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true)
-    await onSubmit(p)
+    const ok = await onSubmit(p)
+    if (ok !== false) setSaved(p)
     setBusy(false)
   }
 
@@ -86,11 +104,12 @@ export default function ProfileForm({ initial, onSubmit, submitLabel }: {
         </div>
         {p.energy_mode !== 'dynamic' && (
           <label className="field"><span>Factor actual</span>
-            <NumInput value={p.activity_factor} onChange={(v) => set('activity_factor', v)} />
+            <NumInput value={p.activity_factor} fallback={ACTIVITY_FACTORS[(p.activity_level ?? 2) - 1]}
+              fallbackAsPlaceholder={defaultsAsPlaceholders} onChange={(v) => set('activity_factor', v)} />
           </label>
         )}
         <label className="field"><span>Objetivo de pasos diarios</span>
-          <NumInput decimal={false} value={p.steps_goal} onChange={(v) => set('steps_goal', v)} />
+          <NumInput decimal={false} {...def('steps_goal')} value={p.steps_goal} onChange={(v) => set('steps_goal', v)} />
         </label>
       </div>
 
@@ -98,22 +117,22 @@ export default function ProfileForm({ initial, onSubmit, submitLabel }: {
         <h2><Target size={14} /> Objetivos</h2>
         <div className="grid3">
           <label className="field"><span>Proteína g/kg</span>
-            <NumInput value={p.protein_g_kg} onChange={(v) => set('protein_g_kg', v)} />
+            <NumInput {...def('protein_g_kg')} value={p.protein_g_kg} onChange={(v) => set('protein_g_kg', v)} />
           </label>
           <label className="field"><span>Grasa g/kg</span>
-            <NumInput value={p.fat_g_kg} onChange={(v) => set('fat_g_kg', v)} />
+            <NumInput {...def('fat_g_kg')} value={p.fat_g_kg} onChange={(v) => set('fat_g_kg', v)} />
           </label>
           <label className="field"><span>Déficit kcal</span>
-            <NumInput decimal={false} negative inputMode="text" value={p.deficit_kcal} onChange={(v) => set('deficit_kcal', v)} />
+            <NumInput decimal={false} negative inputMode="text" {...def('deficit_kcal')} value={p.deficit_kcal} onChange={(v) => set('deficit_kcal', v)} />
           </label>
         </div>
         <span className="small faint">Carbohidratos = kcal restantes ÷ 4. Un déficit negativo = superávit.</span>
         <div className="grid2">
           <label className="field"><span>Tolerancia kcal (±%)</span>
-            <NumInput decimal={false} value={p.kcal_tolerance_pct} onChange={(v) => set('kcal_tolerance_pct', v)} />
+            <NumInput decimal={false} {...def('kcal_tolerance_pct')} value={p.kcal_tolerance_pct} onChange={(v) => set('kcal_tolerance_pct', v)} />
           </label>
           <label className="field"><span>Proteína mínima (%)</span>
-            <NumInput decimal={false} value={p.protein_min_pct} onChange={(v) => set('protein_min_pct', v)} />
+            <NumInput decimal={false} {...def('protein_min_pct')} value={p.protein_min_pct} onChange={(v) => set('protein_min_pct', v)} />
           </label>
         </div>
         {preview && (
@@ -125,7 +144,10 @@ export default function ProfileForm({ initial, onSubmit, submitLabel }: {
         )}
       </div>
 
-      <button className="btn-primary btn-block" disabled={busy}>{busy ? <span className="spin" /> : submitLabel}</button>
+      {beforeSubmit}
+      {requireChanges && !dirty
+        ? <button className="btn-ghost btn-block" disabled>Sin cambios</button>
+        : <button className="btn-primary btn-block" disabled={busy}>{busy ? <span className="spin" /> : submitLabel}</button>}
     </form>
   )
 }

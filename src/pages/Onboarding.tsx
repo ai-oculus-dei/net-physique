@@ -16,9 +16,10 @@ export default function Onboarding() {
       <ProfileForm
         initial={profile ?? {}}
         submitLabel="Empezar"
+        defaultsAsPlaceholders
         onSubmit={async (p) => {
           const err = await saveProfile({ ...p, onboarded: true })
-          if (err) return toast.err(err)
+          if (err) { toast.err(err); return false }
           if (p.weight_kg) await supabase.from('weights').upsert({ day: ymd(), kg: p.weight_kg })
         }}
       />

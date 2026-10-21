@@ -6,6 +6,9 @@ import { UNITS, deleteDish, dishTotals, loadDish, saveDish, toGrams, type DishDr
 import { macrosFor } from '../lib/food'
 import type { Product } from '../lib/types'
 
+/** cantidad por defecto de un ingrediente nuevo (en gris hasta que se escribe otra) */
+const DEFAULT_AMOUNT = 100
+
 export default function DishEditor({ dish, onClose, onSaved, onDeleted }: {
   dish: Product | null
   onClose: () => void
@@ -24,7 +27,7 @@ export default function DishEditor({ dish, onClose, onSaved, onDeleted }: {
 
   function addIngredient(p: Product) {
     setPicking(false)
-    setD((o) => o && ({ ...o, items: [...o.items, { product: p, amount: 100, unit: 'g' }] }))
+    setD((o) => o && ({ ...o, items: [...o.items, { product: p, amount: DEFAULT_AMOUNT, unit: 'g', fresh: true }] }))
   }
   const setItem = (i: number, patch: Partial<{ amount: number; unit: Unit }>) =>
     setD((o) => o && ({ ...o, items: o.items.map((it, j) => (j === i ? { ...it, ...patch } : it)) }))
@@ -77,7 +80,8 @@ export default function DishEditor({ dish, onClose, onSaved, onDeleted }: {
                         onClick={() => setD({ ...d, items: d.items.filter((_, j) => j !== i) })}><X size={16} /></button>
                     </div>
                     <div className="grid2" style={{ marginTop: 6 }}>
-                      <NumInput className="mono" value={it.amount} onChange={(v) => setItem(i, { amount: v ?? 0 })} aria-label="Cantidad" />
+                      <NumInput className="mono" value={it.amount} fallback={DEFAULT_AMOUNT} fallbackAsPlaceholder={!!it.fresh}
+                        onChange={(v) => setItem(i, { amount: v ?? DEFAULT_AMOUNT })} aria-label="Cantidad" />
                       <select value={it.unit} onChange={(e) => setItem(i, { unit: e.target.value as Unit })} aria-label="Unidad">
                         {UNITS.map((u) => (
                           <option key={u.id} value={u.id}>

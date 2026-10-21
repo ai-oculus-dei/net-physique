@@ -9,6 +9,11 @@ import { muscleEs, muscleLoad } from '../lib/muscles'
 import type { Exercise, WorkoutSet } from '../lib/types'
 import { deleteWorkout, saveWorkout, type WorkoutDraft } from '../lib/workouts'
 
+// Valores por defecto de un ejercicio nuevo: se muestran en gris y se usan si no se escribe nada
+const DEFAULT_SETS = 3
+const DEFAULT_REPS = 10
+const DEFAULT_CARDIO_MIN = 20
+
 export default function WorkoutEditor({ draft: initial, weekLoad, kg, onClose, onSaved }: {
   draft: WorkoutDraft; weekLoad: Record<string, number>; kg: number; onClose: () => void; onSaved: () => void
 }) {
@@ -25,8 +30,8 @@ export default function WorkoutEditor({ draft: initial, weekLoad, kg, onClose, o
     setD((o) => ({
       ...o,
       items: [...o.items, {
-        exercise_id: e.id, exercise: e, position: o.items.length, sets: cardio ? 1 : 3, reps: cardio ? 1 : 10,
-        weight_kg: null, minutes: cardio ? 20 : null, done: false,
+        exercise_id: e.id, exercise: e, position: o.items.length, sets: cardio ? 1 : DEFAULT_SETS, reps: cardio ? 1 : DEFAULT_REPS,
+        weight_kg: null, minutes: cardio ? DEFAULT_CARDIO_MIN : null, done: false,
       }],
     }))
     setPicking(false)
@@ -95,14 +100,14 @@ export default function WorkoutEditor({ draft: initial, weekLoad, kg, onClose, o
                 <div className="grid3" style={{ marginTop: 8 }}>
                   {cardio ? (
                     <label className="field" style={{ gridColumn: 'span 3' }}><span>Minutos</span>
-                      <NumInput value={s.minutes} onChange={(v) => setItem(i, { minutes: v })} />
+                      <NumInput value={s.minutes} fallback={DEFAULT_CARDIO_MIN} fallbackAsPlaceholder={!s.workout_id} onChange={(v) => setItem(i, { minutes: v })} />
                     </label>
                   ) : (
                     <>
                       <label className="field"><span>Series</span>
-                        <NumInput decimal={false} value={s.sets} onChange={(v) => setItem(i, { sets: v ?? 0 })} /></label>
+                        <NumInput decimal={false} value={s.sets} fallback={DEFAULT_SETS} fallbackAsPlaceholder={!s.workout_id} onChange={(v) => setItem(i, { sets: v ?? DEFAULT_SETS })} /></label>
                       <label className="field"><span>Reps</span>
-                        <NumInput decimal={false} value={s.reps} onChange={(v) => setItem(i, { reps: v ?? 0 })} /></label>
+                        <NumInput decimal={false} value={s.reps} fallback={DEFAULT_REPS} fallbackAsPlaceholder={!s.workout_id} onChange={(v) => setItem(i, { reps: v ?? DEFAULT_REPS })} /></label>
                       <label className="field"><span>Peso kg</span>
                         <NumInput value={s.weight_kg} placeholder="—" onChange={(v) => setItem(i, { weight_kg: v })} /></label>
                     </>

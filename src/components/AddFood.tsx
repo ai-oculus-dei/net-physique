@@ -228,11 +228,13 @@ function nowTime() {
 export function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, onSaved }: {
   product: Product; meal: Meal; day: string; defaultGrams: number | null; onBack: () => void; onSaved: () => void
 }) {
-  const [grams, setGrams] = useState(String(defaultGrams ?? product.serving_g ?? 100))
+  // la cantidad sugerida (última vez, ración o 100 g) se muestra en gris; se usa si no se escribe nada
+  const suggested = Number(defaultGrams ?? product.serving_g ?? 100)
+  const [grams, setGrams] = useState('')
   const [meal, setMeal] = useState<Meal>(meal0)
   const [time, setTime] = useState(nowTime())
   const [busy, setBusy] = useState(false)
-  const g = num(grams) ?? 0
+  const g = num(grams) ?? suggested
   const m = macrosFor(product, g)
   const dish = isDish(product)
 
@@ -263,7 +265,8 @@ export function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, o
       </div>
       <div className="grid3">
         <label className="field" style={{ gridColumn: 'span 2' }}><span>Cantidad (g)</span>
-          <input className="mono" inputMode="decimal" value={grams} onChange={(e) => setGrams(decimalText(e.target.value))} autoFocus />
+          <input className="mono" inputMode="decimal" value={grams} placeholder={String(suggested)}
+            onChange={(e) => setGrams(decimalText(e.target.value))} autoFocus />
         </label>
         <label className="field"><span>Hora</span><input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></label>
       </div>

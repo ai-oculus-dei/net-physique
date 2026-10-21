@@ -17,7 +17,7 @@ export default function DailyWeightPrompt() {
     const today = ymd()
     try { if (localStorage.getItem(SKIP_KEY) === today) return } catch { /* sin storage */ }
     supabase.from('weights').select('day').eq('day', today).maybeSingle().then(({ data }) => {
-      if (!data) { setKg(profile?.weight_kg ? String(profile.weight_kg) : ''); setOpen(true) }
+      if (!data) { setKg(''); setOpen(true) }
     })
   }, [profile?.id])
 
@@ -40,10 +40,10 @@ export default function DailyWeightPrompt() {
       <div className="stack">
         <p className="muted small" style={{ margin: 0 }}>Después de ir al baño y antes de comer o beber. Se usa la media semanal como referencia.</p>
         <input className="mono" style={{ fontSize: 28, textAlign: 'center' }} inputMode="decimal" autoFocus
-          value={kg} onChange={(e) => setKg(decimalText(e.target.value))} placeholder="00.0" />
+          value={kg} onChange={(e) => setKg(decimalText(e.target.value))} placeholder={profile?.weight_kg ? String(profile.weight_kg) : '00.0'} />
         <div className="grid2">
           <button className="btn-ghost" onClick={close}>Hoy no</button>
-          <button className="btn-primary" onClick={save}>Guardar</button>
+          <button className="btn-primary" onClick={save} disabled={!num(kg)}>Guardar</button>
         </div>
       </div>
     </Sheet>

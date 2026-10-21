@@ -16,6 +16,8 @@ export interface Ingredient {
   product: Product
   amount: number
   unit: Unit
+  /** recién añadido: la cantidad es la predeterminada */
+  fresh?: boolean
 }
 
 /** Cantidad → gramos. "ración" usa la ración del producto (o 100 g si no tiene) */

@@ -167,20 +167,28 @@ export function decimalText(s: string, { decimal = true, negative = false } = {}
  * Campo numérico: guarda el texto mientras se escribe (para no perder "80." a medias)
  * y emite el número ya convertido. decimal=false para enteros (pasos, series…).
  */
-export function NumInput({ value, onChange, decimal = true, negative = false, ...rest }: {
+export function NumInput({ value, onChange, decimal = true, negative = false, fallback, fallbackAsPlaceholder = false, ...rest }: {
   value: number | null | undefined
   onChange: (n: number | null) => void
   decimal?: boolean
   negative?: boolean
+  /** valor que se usa si el campo se deja vacío; se muestra en gris como placeholder */
+  fallback?: number | null
+  /** el valor actual es solo el predeterminado: mostrarlo en gris (campo vacío) en lugar de escrito */
+  fallbackAsPlaceholder?: boolean
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>) {
-  const [text, setText] = useState(value == null ? '' : String(value))
+  const shown = (v: number | null | undefined) =>
+    v == null || (fallbackAsPlaceholder && fallback != null && v === fallback) ? '' : String(v)
+  const [text, setText] = useState(() => shown(value))
+  const emitted = (t: string) => num(t) ?? fallback ?? null
   // Si el valor cambia desde fuera (otro control), se refleja en el texto
   useEffect(() => {
-    if (num(text) !== (value ?? null)) setText(value == null ? '' : String(value))
+    if (emitted(text) !== (value ?? null)) setText(value == null || value === fallback ? '' : String(value))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
   return (
     <input {...rest} inputMode={rest.inputMode ?? (decimal ? 'decimal' : 'numeric')} value={text}
-      onChange={(e) => { const t = decimalText(e.target.value, { decimal, negative }); setText(t); onChange(num(t)) }} />
+      placeholder={fallback != null ? String(fallback) : rest.placeholder}
+      onChange={(e) => { const t = decimalText(e.target.value, { decimal, negative }); setText(t); onChange(emitted(t)) }} />
   )
 }

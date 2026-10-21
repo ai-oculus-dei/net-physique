@@ -1,4 +1,6 @@
-import { Moon, Palette, Settings as SettingsIcon, Sun } from 'lucide-react'
+import { Download, Moon, Palette, Settings as SettingsIcon, Sun } from 'lucide-react'
+import { useState } from 'react'
+import ExportSheet from '../components/ExportSheet'
 import ProfileForm from '../components/ProfileForm'
 import { Seg, toast } from '../components/ui'
 import { supabase } from '../lib/supabase'
@@ -6,6 +8,7 @@ import { useApp } from '../stores/app'
 
 export default function Settings() {
   const { profile, saveProfile, theme, setTheme, session } = useApp()
+  const [exporting, setExporting] = useState(false)
   if (!profile) return null
   return (
     <div className="shell">
@@ -25,8 +28,15 @@ export default function Settings() {
           key={profile.id}
           initial={profile}
           submitLabel="Guardar cambios"
-          onSubmit={async (p) => { const e = await saveProfile(p); e ? toast.err(e) : toast('Guardado') }}
+          requireChanges
+          beforeSubmit={<button type="button" className="btn-block" onClick={() => setExporting(true)}><Download size={17} /> Exportar</button>}
+          onSubmit={async (p) => {
+            const e = await saveProfile(p)
+            if (e) { toast.err(e); return false }
+            toast('Guardado')
+          }}
         />
+        <ExportSheet open={exporting} onClose={() => setExporting(false)} />
         <button className="btn-danger btn-block" onClick={() => supabase.auth.signOut()}>Cerrar sesión</button>
         <p className="faint small" style={{ textAlign: 'center' }}>
           Ejercicios: free-exercise-db (dominio público) · Alimentos: Open Food Facts (ODbL)
