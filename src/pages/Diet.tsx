@@ -1,4 +1,4 @@
-import { Beef, ChartNoAxesColumn, Droplet, Dumbbell, Flame, Footprints, Plus, Salad, ScanBarcode, Utensils, Wheat, X } from 'lucide-react'
+import { Beef, ChartNoAxesColumn, ChefHat, Droplet, Dumbbell, Flame, Footprints, Plus, Salad, ScanBarcode, Utensils, Wheat, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import AddFood from '../components/AddFood'
 import DayPicker from '../components/DayPicker'
@@ -126,7 +126,7 @@ export default function Diet() {
                   {items.map((l) => (
                     <div key={l.id} className="list-item">
                       <div className="grow">
-                        <div className="ellipsis">{l.name}</div>
+                        <div className="ellipsis">{l.barcode?.startsWith('dish-') && <ChefHat size={13} color="var(--amber)" style={{ marginRight: 4, verticalAlign: -1 }} />}{l.name}</div>
                         <div className="small muted mono">{hhmm(l.eaten_at)} · {r0(l.grams)} g · P{r0(l.protein)} C{r0(l.carbs)} G{r0(l.fat)}</div>
                       </div>
                       <span className="mono">{r0(l.kcal)}</span>

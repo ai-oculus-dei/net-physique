@@ -1,59 +1,82 @@
-import { History, Package, PenLine, ScanBarcode, Search, SearchX, TriangleAlert } from 'lucide-react'
+import { ChefHat, History, Package, PenLine, Pencil, Plus, ScanBarcode, Search, SearchX, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import BarcodeScanner from './BarcodeScanner'
+import DishEditor from './DishEditor'
 import { decimalText, Empty, Seg, Sheet, num, r0, r1, toast } from './ui'
 import { ensureCached, lookupBarcode, macrosFor, recentProducts, saveManualProduct, searchProducts } from '../lib/food'
+import { listDishes } from '../lib/dishes'
 import { ymd } from '../lib/dates'
 import { supabase } from '../lib/supabase'
-import { MEALS, type Meal, type Product } from '../lib/types'
+import { MEALS, isDish, type Meal, type Product } from '../lib/types'
 
-type Tab = 'scan' | 'search' | 'history' | 'manual'
+type Tab = 'history' | 'dishes' | 'scan' | 'search' | 'manual'
 
 export default function AddFood({ open, meal, day, onClose, onSaved }: {
   open: boolean; meal: Meal; day: string; onClose: () => void; onSaved: () => void
 }) {
-  const [tab, setTab] = useState<Tab>('history')
   const [picked, setPicked] = useState<Product | null>(null)
   const [defaultGrams, setDefaultGrams] = useState<number | null>(null)
 
-  useEffect(() => { if (open) { setPicked(null); setTab('history') } }, [open])
+  useEffect(() => { if (open) setPicked(null) }, [open])
 
   const pick = (p: Product, grams?: number) => { setPicked(p); setDefaultGrams(grams ?? null) }
 
   return (
-    <Sheet open={open} onClose={onClose} title={picked ? 'Registrar' : 'Añadir alimento'}>
+    <Sheet open={open} onClose={picked ? () => setPicked(null) : onClose} title={picked ? 'Registrar' : 'Añadir alimento'}>
       {picked ? (
         <PortionForm product={picked} meal={meal} day={day} defaultGrams={defaultGrams}
           onBack={() => setPicked(null)} onSaved={onSaved} />
       ) : (
-        <div className="stack">
-          <Seg variant="tabs" value={tab} onChange={setTab} options={[
-            { id: 'history', label: <span className="ic"><History size={14} /> Histórico</span> },
-            { id: 'scan', label: <span className="ic"><ScanBarcode size={14} /> Escanear</span> },
-            { id: 'search', label: <span className="ic"><Search size={14} /> Buscar</span> },
-            { id: 'manual', label: <span className="ic"><PenLine size={14} /> Manual</span> },
-          ]} />
-          {tab === 'scan' && <ScanTab onPick={pick} onManual={() => setTab('manual')} />}
-          {tab === 'search' && <SearchTab onPick={pick} />}
-          {tab === 'history' && <HistoryTab onPick={pick} />}
-          {tab === 'manual' && <ManualTab onPick={pick} />}
-        </div>
+        <ProductPicker onPick={pick} withDishes key={String(open)} />
       )}
     </Sheet>
   )
 }
 
-function ProductRow({ p, onClick, extra }: { p: Product; onClick: () => void; extra?: string }) {
+/** Selector de producto reutilizable (registro de comida e ingredientes de platos) */
+export function ProductPicker({ onPick, withDishes = false, initialTab = 'history' }: {
+  onPick: (p: Product, grams?: number) => void; withDishes?: boolean; initialTab?: Tab
+}) {
+  const [tab, setTab] = useState<Tab>(initialTab)
+  const tabs = [
+    { id: 'history' as Tab, label: <span className="ic"><History size={14} /> Histórico</span> },
+    ...(withDishes ? [{ id: 'dishes' as Tab, label: <span className="ic"><ChefHat size={14} /> Platos</span> }] : []),
+    { id: 'scan' as Tab, label: <span className="ic"><ScanBarcode size={14} /> Escanear</span> },
+    { id: 'search' as Tab, label: <span className="ic"><Search size={14} /> Buscar</span> },
+    { id: 'manual' as Tab, label: <span className="ic"><PenLine size={14} /> Manual</span> },
+  ]
+  return (
+    <div className="stack">
+      <Seg variant="tabs" value={tab} onChange={setTab} options={tabs} />
+      {tab === 'scan' && <ScanTab onPick={onPick} onManual={() => setTab('manual')} />}
+      {tab === 'search' && <SearchTab onPick={onPick} />}
+      {tab === 'history' && <HistoryTab onPick={onPick} />}
+      {tab === 'dishes' && <DishesTab onPick={onPick} />}
+      {tab === 'manual' && <ManualTab onPick={onPick} />}
+    </div>
+  )
+}
+
+export function DishTag() {
+  return <span className="tag dish-tag"><ChefHat size={11} /> Plato cocinado</span>
+}
+
+function ProductRow({ p, onClick, extra, action }: { p: Product; onClick: () => void; extra?: string; action?: React.ReactNode }) {
+  const dish = isDish(p)
   return (
     <div className="list-item" onClick={onClick} style={{ cursor: 'pointer' }}>
-      {p.image_url ? <img className="thumb" src={p.image_url} alt="" loading="lazy" /> : <div className="thumb"><Package size={20} /></div>}
+      {p.image_url ? <img className="thumb" src={p.image_url} alt="" loading="lazy" />
+        : <div className={`thumb ${dish ? 'dish' : ''}`}>{dish ? <ChefHat size={20} /> : <Package size={20} />}</div>}
       <div className="grow">
         <div className="ellipsis">{p.name}</div>
-        <div className="small muted ellipsis">{p.brand ?? '—'}{extra ? ` · ${extra}` : ''}</div>
+        <div className="small muted ellipsis">
+          {dish ? <DishTag /> : p.brand ?? '—'}{extra ? ` · ${extra}` : ''}
+        </div>
       </div>
       <div className="mono small" style={{ textAlign: 'right' }}>
         {r0(p.kcal_100g)}<div className="faint tiny">kcal/100g</div>
       </div>
+      {action}
     </div>
   )
 }
@@ -125,6 +148,41 @@ function HistoryTab({ onPick }: { onPick: (p: Product, g?: number) => void }) {
   )
 }
 
+/** Platos cocinados: elegir para registrar, crear o editar */
+function DishesTab({ onPick }: { onPick: (p: Product) => void }) {
+  const [list, setList] = useState<Product[] | null>(null)
+  const [f, setF] = useState('')
+  const [editing, setEditing] = useState<Product | 'new' | null>(null)
+  const load = () => listDishes().then(setList)
+  useEffect(() => { load() }, [])
+
+  const shown = (list ?? []).filter((p) => p.name.toLowerCase().includes(f.toLowerCase()))
+  return (
+    <div className="stack">
+      <button className="btn-primary" onClick={() => setEditing('new')}><Plus size={17} /> Crear plato</button>
+      {list && list.length > 4 && <input placeholder="Filtrar platos…" value={f} onChange={(e) => setF(e.target.value)} />}
+      {!list && <div className="empty"><span className="spin" /></div>}
+      {list && !list.length && (
+        <Empty icon={ChefHat}>Aún no hay platos. Crea uno con sus ingredientes y se calcularán las kcal por 100 g.</Empty>
+      )}
+      <div className="list">
+        {shown.map((p) => (
+          <ProductRow key={p.barcode} p={p} onClick={() => onPick(p)}
+            action={
+              <button className="btn-icon btn-ghost" aria-label="Editar plato"
+                onClick={(e) => { e.stopPropagation(); setEditing(p) }}><Pencil size={16} /></button>
+            } />
+        ))}
+      </div>
+      {editing && (
+        <DishEditor dish={editing === 'new' ? null : editing} onClose={() => setEditing(null)}
+          onSaved={(p, eatNow) => { setEditing(null); load(); if (eatNow) onPick(p) }}
+          onDeleted={() => { setEditing(null); load() }} />
+      )}
+    </div>
+  )
+}
+
 export function ManualTab({ onPick }: { onPick: (p: Product) => void }) {
   const [v, setV] = useState<Record<string, string>>({})
   const s = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setV((o) => ({ ...o, [k]: e.target.value }))
@@ -176,10 +234,11 @@ export function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, o
   const [busy, setBusy] = useState(false)
   const g = num(grams) ?? 0
   const m = macrosFor(product, g)
+  const dish = isDish(product)
 
   async function save() {
     setBusy(true)
-    await ensureCached(product)
+    if (!dish) await ensureCached(product)
     const eaten = new Date(`${day}T${time}:00`)
     const { error } = await supabase.from('food_logs').insert({
       day, meal, eaten_at: eaten.toISOString(), barcode: product.barcode, name: product.name, grams: g, ...m,
@@ -193,10 +252,13 @@ export function PortionForm({ product, meal: meal0, day, defaultGrams, onBack, o
   return (
     <div className="stack">
       <div className="row">
-        {product.image_url ? <img className="thumb" src={product.image_url} alt="" /> : <div className="thumb"><Package size={20} /></div>}
+        {product.image_url ? <img className="thumb" src={product.image_url} alt="" />
+          : <div className={`thumb ${dish ? 'dish' : ''}`}>{dish ? <ChefHat size={20} /> : <Package size={20} />}</div>}
         <div className="grow">
           <div style={{ fontWeight: 600 }}>{product.name}</div>
-          <div className="small muted">{product.brand ?? ''} <span className="tag">{product.barcode.startsWith('manual') ? 'manual' : product.barcode}</span></div>
+          <div className="small muted">
+            {dish ? <DishTag /> : <>{product.brand ?? ''} <span className="tag">{product.barcode.startsWith('manual') ? 'manual' : product.barcode}</span></>}
+          </div>
         </div>
       </div>
       <div className="grid3">

@@ -45,8 +45,12 @@ export interface Product {
   fiber_100g?: number | null
   salt_100g?: number | null
   serving_g: number | null
-  source?: string
+  source?: 'off' | 'manual' | 'dish' | string
+  /** solo platos: peso final cocinado (null = suma de ingredientes) */
+  dish_total_g?: number | null
 }
+
+export const isDish = (p: Pick<Product, 'source'>) => p.source === 'dish'
 
 export interface FoodLog {
   id: number

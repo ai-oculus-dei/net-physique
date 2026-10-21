@@ -253,3 +253,10 @@ a { color: var(--cyan); }
 /* Red de seguridad: nunca scroll horizontal de página ni de hojas */
 html, body { overflow-x: hidden; }
 .shell, .sheet { overflow-x: clip; }
+
+/* ---------- Platos ---------- */
+.dish-tag { display: inline-flex; align-items: center; gap: 4px; color: var(--amber); border-color: color-mix(in srgb, var(--amber) 45%, transparent); font-family: Inter, system-ui, sans-serif; }
+.thumb.dish { color: var(--amber); border-color: color-mix(in srgb, var(--amber) 35%, transparent); }
+.thumb.dish .lucide { color: var(--amber); }
+.ingredient { padding-bottom: 10px; border-bottom: 1px dashed var(--line); }
+.ingredient:last-child { border-bottom: none; padding-bottom: 0; }

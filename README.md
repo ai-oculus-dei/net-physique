@@ -2,7 +2,7 @@
 
 PWA personal para gestionar dieta, entreno y físico. React + Vite + TypeScript, desplegada en GitHub Pages, con datos en Supabase.
 
-- 🥗 **Diet** — escáner de código de barras, búsqueda (caché propia → Open Food Facts), histórico, registro por comida, kcal y macros vs objetivo.
+- 🥗 **Diet** — escáner de código de barras, búsqueda (caché propia → Open Food Facts), histórico, registro por comida, kcal y macros vs objetivo. **Platos cocinados**: receta con ingredientes (g, ml, cucharadas, raciones) y peso final opcional → kcal y macros por 100 g; se registran como un alimento más.
 - 🏋️ **Training** — catálogo de free-exercise-db + ejercicios propios, series/reps/peso, planificación con checkbox, mapa de calor muscular semanal, pasos, estimación de kcal (MET).
 - 🧬 **Physique** — peso en ayunas diario, media semanal y tendencia, % grasa (Jackson-Pollock 3/7, US Navy, impedancia), calendario de cumplimiento, fotos privadas.
 - ⚙️ **Ajustes** — tema oscuro/claro, datos personales, modo de gasto (dinámico / factor fijo / adaptativo), objetivos.
