@@ -1,6 +1,7 @@
 import { Beef, ChartNoAxesColumn, ChefHat, Droplet, Dumbbell, Flame, Footprints, Plus, Salad, ScanBarcode, Utensils, Wheat, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import AddFood from '../components/AddFood'
+import BalanceCard from '../components/BalanceCard'
 import DayPicker from '../components/DayPicker'
 import { Bar, Empty, Ring, r0, toast } from '../components/ui'
 import { hhmm, ymd } from '../lib/dates'
@@ -63,6 +64,9 @@ export default function Diet() {
       </div>
 
       <div className="stack">
+        {/* Balance de los 7 días anteriores (no depende del día elegido) */}
+        <BalanceCard refreshKey={logs} />
+
         {/* Resumen calorías */}
         <div className="card glow">
           <h2><Flame size={14} /> Calorías consumidas / objetivo</h2>

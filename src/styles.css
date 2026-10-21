@@ -260,3 +260,36 @@ html, body { overflow-x: hidden; }
 .thumb.dish .lucide { color: var(--amber); }
 .ingredient { padding-bottom: 10px; border-bottom: 1px dashed var(--line); }
 .ingredient:last-child { border-bottom: none; padding-bottom: 0; }
+
+/* ---------- Balance 7 días (semáforo) ---------- */
+:root, :root[data-theme='dark'] { --sem-blue: #38bdf8; --sem-orange: #fb923c; --sem-red: #f43f5e; --sem-gray: #64748b; }
+:root[data-theme='light'] { --sem-blue: #0284c7; --sem-orange: #ea580c; --sem-red: #e11d48; --sem-gray: #94a3b8; }
+.balance { --sem: var(--sem-gray); border-color: color-mix(in srgb, var(--sem) 45%, var(--line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--sem) 18%, transparent), 0 10px 34px -16px var(--sem); }
+.balance.blue { --sem: var(--sem-blue); } .balance.orange { --sem: var(--sem-orange); } .balance.red { --sem: var(--sem-red); }
+.balance h2 .lucide { color: var(--sem); }
+.lights { display: flex; flex-direction: column; gap: 6px; padding: 7px; border-radius: 14px; background: var(--bg-2); border: 1px solid var(--line); }
+.light { width: 16px; height: 16px; border-radius: 50%; display: block; opacity: .16; transition: opacity .3s, box-shadow .3s; }
+.light.blue { background: var(--sem-blue); } .light.orange { background: var(--sem-orange); } .light.red { background: var(--sem-red); }
+.light.on { opacity: 1; }
+.light.blue.on { box-shadow: 0 0 8px var(--sem-blue), 0 0 18px var(--sem-blue); }
+.light.orange.on { box-shadow: 0 0 8px var(--sem-orange), 0 0 18px var(--sem-orange); }
+.light.red.on { box-shadow: 0 0 8px var(--sem-red), 0 0 18px var(--sem-red); }
+.balance-title { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 17px; letter-spacing: -0.01em; color: var(--sem-gray); }
+.balance-title.blue, .balance-dev.blue { color: var(--sem-blue); text-shadow: 0 0 12px color-mix(in srgb, var(--sem-blue) 55%, transparent); }
+.balance-title.orange, .balance-dev.orange { color: var(--sem-orange); text-shadow: 0 0 12px color-mix(in srgb, var(--sem-orange) 55%, transparent); }
+.balance-title.red, .balance-dev.red { color: var(--sem-red); text-shadow: 0 0 12px color-mix(in srgb, var(--sem-red) 55%, transparent); }
+.balance-kpis { margin-top: 14px; row-gap: 12px; }
+.balance-kpis .v { font-size: 19px; }
+.ruler { position: relative; margin: 30px 2px 6px; }
+.ruler-track { height: 8px; border-radius: 99px; opacity: .55; }
+.ruler-marker { position: absolute; top: -4px; width: 3px; height: 16px; margin-left: -1.5px; border-radius: 2px; background: var(--text); box-shadow: 0 0 8px var(--sem), 0 0 2px var(--text); transition: left .6s cubic-bezier(.2,.8,.2,1); }
+.ruler-marker span { position: absolute; bottom: 19px; left: 50%; transform: translateX(-50%); font-size: 11px; white-space: nowrap; color: var(--text); }
+.ruler-marker::after { content: ''; position: absolute; top: -5px; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: var(--text); }
+.ruler-ticks { position: relative; height: 14px; margin-top: 4px; font-size: 9.5px; color: var(--faint); }
+.ruler-ticks span { position: absolute; transform: translateX(-50%); }
+.ruler-ticks span:first-child { transform: none; } .ruler-ticks span:last-child { transform: translateX(-100%); }
+.balance-row { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); color: var(--muted); }
+.balance-row .lucide { margin-top: 2px; color: var(--faint); }
+.balance-row b { color: var(--text); }
+.ruler-marker.edge-l span { left: -2px; transform: none; }
+.ruler-marker.edge-r span { left: auto; right: -2px; transform: none; }
