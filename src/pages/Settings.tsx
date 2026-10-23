@@ -1,5 +1,6 @@
 import { Bell, Download, Moon, Palette, Settings as SettingsIcon, Sun } from 'lucide-react'
 import { useState } from 'react'
+import { BODYFAT_EVERY_DAYS } from '../lib/reminders'
 import ExportSheet from '../components/ExportSheet'
 import ProfileForm from '../components/ProfileForm'
 import { Seg, Switch, toast } from '../components/ui'
@@ -36,7 +37,7 @@ export default function Settings() {
                 hint="Cada día desde las 6:00 hasta que lo registres"
                 onChange={(v) => saveProfile({ remind_weight: v })} />
               <Switch checked={profile.remind_bodyfat !== false} label="% de grasa corporal"
-                hint="Cada 2 semanas desde la última medición"
+                hint={`Cada ${BODYFAT_EVERY_DAYS / 7} semanas desde la última medición`}
                 onChange={(v) => saveProfile({ remind_bodyfat: v })} />
             </div>
             <button type="button" className="btn-block" onClick={() => setExporting(true)}><Download size={17} /> Exportar</button>

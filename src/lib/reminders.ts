@@ -1,10 +1,10 @@
-// Avisos: peso en ayunas (cada día desde las 6:00) y % de grasa (cada 2 semanas).
+// Avisos: peso en ayunas (cada día desde las 6:00) y % de grasa (cada 3 semanas).
 // Lógica pura para decidir qué avisos mostrar.
 
 /** Hora a partir de la cual aparecen los avisos */
 export const REMINDER_FROM_HOUR = 6
 /** Días entre mediciones de % de grasa */
-export const BODYFAT_EVERY_DAYS = 14
+export const BODYFAT_EVERY_DAYS = 21
 /** Si la app pasa este tiempo en segundo plano, cuenta como "volver a abrirla" (los avisos cerrados reaparecen) */
 export const REOPEN_AFTER_MS = 10 * 60 * 1000
 

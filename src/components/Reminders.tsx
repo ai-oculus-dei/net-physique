@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../stores/app'
 
 /**
- * Avisos flotantes en la parte superior: peso en ayunas (diario, desde las 6:00) y % de grasa (cada 2 semanas).
+ * Avisos flotantes en la parte superior: peso en ayunas (diario, desde las 6:00) y % de grasa (cada 3 semanas).
  * Siguen visibles hasta que se introduce el dato o se pulsa la X; la X dura hasta la próxima vez que se abre la app.
  */
 export default function Reminders() {

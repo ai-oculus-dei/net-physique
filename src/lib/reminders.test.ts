@@ -3,7 +3,7 @@ import { daysBetween, reminderState, type ReminderInput } from './reminders'
 
 const base: ReminderInput = {
   now: new Date(2026, 9, 21, 7, 30), today: '2026-10-21',
-  hasWeightToday: false, lastBodyFatDay: '2026-10-01',
+  hasWeightToday: false, lastBodyFatDay: '2026-09-20',
   remindWeight: true, remindBodyFat: true, dismissed: { weight: false, bodyfat: false },
 }
 const st = (p: Partial<ReminderInput>) => reminderState({ ...base, ...p })
@@ -17,10 +17,11 @@ describe('avisos', () => {
     expect(st({ hasWeightToday: true }).weight).toBe(false)
     expect(st({ hasWeightToday: null }).weight).toBe(false)
   })
-  it('grasa: cada 14 días o si nunca se midió', () => {
-    expect(daysBetween('2026-10-07', '2026-10-21')).toBe(14)
-    expect(st({ lastBodyFatDay: '2026-10-08' })).toMatchObject({ bodyfat: false, bodyFatDaysAgo: 13 })
-    expect(st({ lastBodyFatDay: '2026-10-07' })).toMatchObject({ bodyfat: true, bodyFatDaysAgo: 14 })
+  it('grasa: cada 21 días (3 semanas) o si nunca se midió', () => {
+    expect(daysBetween('2026-09-30', '2026-10-21')).toBe(21)
+    expect(st({ lastBodyFatDay: '2026-10-07' })).toMatchObject({ bodyfat: false, bodyFatDaysAgo: 14 })
+    expect(st({ lastBodyFatDay: '2026-10-01' })).toMatchObject({ bodyfat: false, bodyFatDaysAgo: 20 })
+    expect(st({ lastBodyFatDay: '2026-09-30' })).toMatchObject({ bodyfat: true, bodyFatDaysAgo: 21 })
     expect(st({ lastBodyFatDay: null })).toMatchObject({ bodyfat: true, bodyFatDaysAgo: null })
     expect(st({ lastBodyFatDay: undefined }).bodyfat).toBe(false) // sin cargar
   })
