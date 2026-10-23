@@ -1,6 +1,6 @@
 // Platos cocinados: producto (source 'dish') + ingredientes. Valores por 100 g del plato terminado.
 import { supabase } from './supabase'
-import { macrosFor } from './food'
+import { ensureCached, macrosFor } from './food'
 import type { Product } from './types'
 
 export type Unit = 'g' | 'ml' | 'cda' | 'cdta' | 'ud'
@@ -90,6 +90,10 @@ export async function saveDish(d: DishDraft): Promise<Product> {
     fat_100g: round(t.per100.fat), serving_g: d.servingGrams, dish_total_g: d.cookedGrams,
     updated_at: new Date().toISOString(),
   }
+  // 1º los ingredientes que vienen de la búsqueda de Open Food Facts deben existir en el catálogo propio
+  // (dish_ingredients.barcode → products); se hace antes de tocar el plato para no dejarlo a medias
+  for (const it of d.items) if (it.product.source !== 'dish') await ensureCached(it.product)
+
   const { error } = d.barcode
     ? await supabase.from('products').update(row).eq('barcode', barcode)
     : await supabase.from('products').insert(row)
@@ -106,7 +110,11 @@ export async function saveDish(d: DishDraft): Promise<Product> {
   })
   if (rows.length) {
     const { error: e2 } = await supabase.from('dish_ingredients').insert(rows)
-    if (e2) throw e2
+    if (e2) {
+      // un plato nuevo sin ingredientes no sirve: se deshace para poder reintentar sin duplicados
+      if (!d.barcode) await supabase.from('products').delete().eq('barcode', barcode)
+      throw e2
+    }
   }
   return row as Product
 }

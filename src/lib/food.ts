@@ -34,11 +34,21 @@ export async function searchProducts(q: string, opts: { brand?: string; store?: 
 }
 
 /** Guarda un producto de búsqueda remota en la caché al usarlo */
+/** Columnas de la tabla products (los objetos de la app pueden llevar campos extra, p. ej. del histórico) */
+const PRODUCT_COLUMNS = [
+  'barcode', 'name', 'brand', 'image_url', 'kcal_100g', 'protein_100g', 'carbs_100g', 'sugars_100g', 'fat_100g',
+  'sat_fat_100g', 'fiber_100g', 'salt_100g', 'serving_g', 'raw_json', 'source', 'unit',
+] as const
+
+/**
+ * Guarda en el catálogo propio un producto que viene de Open Food Facts (búsqueda) si aún no está.
+ * Necesario antes de referenciarlo desde un registro o un plato.
+ */
 export async function ensureCached(p: Product) {
-  await supabase.from('products').upsert(
-    { ...p, source: p.source ?? 'off' },
-    { onConflict: 'barcode', ignoreDuplicates: true },
-  )
+  const row: Record<string, unknown> = { source: 'off' }
+  for (const k of PRODUCT_COLUMNS) if ((p as any)[k] !== undefined) row[k] = (p as any)[k]
+  const { error } = await supabase.from('products').upsert(row, { onConflict: 'barcode', ignoreDuplicates: true })
+  if (error) throw error
 }
 
 export async function saveManualProduct(p: Omit<Product, 'barcode'> & { barcode?: string }) {

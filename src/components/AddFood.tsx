@@ -295,7 +295,9 @@ export function PortionForm({ product: product0, meal: meal0, day, defaultGrams,
 
   async function save() {
     setBusy(true)
-    if (!dish) await ensureCached(product)
+    if (!dish) {
+      try { await ensureCached(product) } catch (e: any) { setBusy(false); return toast.err(e.message) }
+    }
     const eaten = new Date(`${day}T${time}:00`)
     const { error } = await supabase.from('food_logs').insert({
       day, meal, eaten_at: eaten.toISOString(), barcode: product.barcode, name: product.name, grams: g, unit, ...m,
