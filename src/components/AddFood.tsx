@@ -14,13 +14,15 @@ import { MEALS, isDish, type Meal, type Product } from '../lib/types'
 
 type Tab = 'history' | 'dishes' | 'scan' | 'search' | 'manual'
 
-export default function AddFood({ open, meal, day, onClose, onSaved }: {
+export default function AddFood({ open, meal, day, onClose, onSaved, initialProduct = null }: {
   open: boolean; meal: Meal; day: string; onClose: () => void; onSaved: () => void
+  /** abrir directamente en "Registrar" con este producto (p. ej. un plato recién creado) */
+  initialProduct?: Product | null
 }) {
   const [picked, setPicked] = useState<Product | null>(null)
   const [defaultGrams, setDefaultGrams] = useState<number | null>(null)
 
-  useEffect(() => { if (open) setPicked(null) }, [open])
+  useEffect(() => { if (open) setPicked(initialProduct) }, [open, initialProduct])
 
   const pick = (p: Product, grams?: number) => { setPicked(p); setDefaultGrams(grams ?? null) }
 

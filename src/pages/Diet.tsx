@@ -4,11 +4,12 @@ import AddFood from '../components/AddFood'
 import BalanceCard from '../components/BalanceCard'
 import Planner from '../components/Planner'
 import EditFoodLog from '../components/EditFoodLog'
+import DishEditor from '../components/DishEditor'
 import DayPicker from '../components/DayPicker'
 import { Bar, Empty, Ring, r0, toast } from '../components/ui'
 import { hhmm, ymd } from '../lib/dates'
 import { supabase } from '../lib/supabase'
-import { MEALS, type FoodLog, type Meal } from '../lib/types'
+import { MEALS, type FoodLog, type Meal, type Product } from '../lib/types'
 import { useDayEnergy } from '../lib/useDayEnergy'
 
 /** Comida sugerida según la hora */
@@ -28,6 +29,9 @@ export default function Diet() {
   const [adding, setAdding] = useState<Meal | null>(null)
   const [planning, setPlanning] = useState(false)
   const [editing, setEditing] = useState<FoodLog | null>(null)
+  const [creatingDish, setCreatingDish] = useState(false)
+  // plato recién creado con "Guardar y registrar": se abre Añadir directamente en Registrar
+  const [logDish, setLogDish] = useState<Product | null>(null)
   const { energy } = useDayEnergy(day)
 
   const load = useCallback(async () => {
@@ -123,6 +127,9 @@ export default function Diet() {
         <button className="btn-block planner-btn" onClick={() => setPlanning(true)}>
           <CalendarRange size={18} /> Planificador
         </button>
+        <button className="btn-block planner-btn" onClick={() => setCreatingDish(true)}>
+          <ChefHat size={18} /> Crear plato
+        </button>
 
         {/* Comidas */}
         {MEALS.map((m) => {
@@ -164,8 +171,13 @@ export default function Diet() {
         target={energy ? { kcal: energy.kcal, protein: energy.protein, carbs: energy.carbs, fat: energy.fat } : null}
         onLogged={() => { setPlanning(false); load() }} />
 
-      <AddFood open={adding !== null} meal={adding ?? 'comida'} day={day}
-        onClose={() => setAdding(null)} onSaved={() => { setAdding(null); load() }} />
+      <AddFood open={adding !== null} meal={adding ?? 'comida'} day={day} initialProduct={logDish}
+        onClose={() => { setAdding(null); setLogDish(null) }} onSaved={() => { setAdding(null); setLogDish(null); load() }} />
+
+      {creatingDish && (
+        <DishEditor dish={null} onClose={() => setCreatingDish(false)} onDeleted={() => setCreatingDish(false)}
+          onSaved={(p, eatNow) => { setCreatingDish(false); if (eatNow) { setLogDish(p); setAdding(mealForNow()) } }} />
+      )}
     </div>
   )
 }
