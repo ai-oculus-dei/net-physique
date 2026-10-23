@@ -5,6 +5,31 @@ import { CircleCheck, TriangleAlert, X, type LucideIcon } from 'lucide-react'
 const sheetStack: number[] = []
 let sheetSeq = 0
 
+// Bloqueo del scroll de la página mientras haya alguna hoja abierta.
+// En iOS `overflow: hidden` en el body no impide el scroll táctil: se fija el body en su posición actual
+// y al cerrar se restaura exactamente donde estaba.
+let lockedScrollY = 0
+function lockPageScroll() {
+  lockedScrollY = window.scrollY
+  const b = document.body.style
+  b.position = 'fixed'
+  b.top = `-${lockedScrollY}px`
+  b.left = '0'
+  b.right = '0'
+  b.width = '100%'
+  b.overflow = 'hidden'
+}
+function unlockPageScroll() {
+  const b = document.body.style
+  b.position = ''
+  b.top = ''
+  b.left = ''
+  b.right = ''
+  b.width = ''
+  b.overflow = ''
+  window.scrollTo(0, lockedScrollY)
+}
+
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: ReactNode; children: ReactNode }) {
   const [drag, setDrag] = useState(0)
   const startY = useRef<number | null>(null)
@@ -14,14 +39,14 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   useEffect(() => {
     if (!open) return
     const id = ++sheetSeq
+    if (!sheetStack.length) lockPageScroll()
     sheetStack.push(id)
     const k = (e: KeyboardEvent) => e.key === 'Escape' && sheetStack[sheetStack.length - 1] === id && closeRef.current()
     window.addEventListener('keydown', k)
-    document.body.style.overflow = 'hidden'
     return () => {
       window.removeEventListener('keydown', k)
       sheetStack.splice(sheetStack.indexOf(id), 1)
-      if (!sheetStack.length) document.body.style.overflow = ''
+      if (!sheetStack.length) unlockPageScroll()
     }
   }, [open])
   useEffect(() => { if (!open) setDrag(0) }, [open])
