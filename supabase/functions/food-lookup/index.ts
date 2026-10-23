@@ -9,7 +9,7 @@ const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-const FIELDS = 'code,product_name,product_name_es,brands,image_front_small_url,nutriments,serving_quantity,serving_size,quantity,product_quantity_unit,serving_quantity_unit'
+const FIELDS = 'code,product_name,product_name_es,brands,image_front_small_url,nutriments,serving_quantity,serving_size,quantity,product_quantity_unit,serving_quantity_unit,stores'
 
 type Off = Record<string, any>
 
@@ -76,15 +76,20 @@ Deno.serve(async (req) => {
   // texto + marca opcional + solo productos de España
   const brand = url.searchParams.get('brand')?.trim() ?? ''
   const spain = url.searchParams.get('es') === '1'
-  if (q || brand) {
+  const store = url.searchParams.get('store')?.trim() ?? ''
+  if (q || brand || store) {
+    // supermercado normalizado igual que la marca (sin tildes ni comillas)
+    const ns = store.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/["\\]/g, '').trim()
     // marca sin tildes ni comillas (el índice de OFF guarda las marcas normalizadas)
     const nb = brand.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/["\\]/g, '').trim()
-    const lucene = [q, nb && `brands:"${nb}"`, spain && 'countries_tags:"en:spain"'].filter(Boolean).join(' ')
+    const lucene = [q, nb && `brands:"${nb}"`, ns && `stores:"${ns}"`, spain && 'countries_tags:"en:spain"'].filter(Boolean).join(' ')
 
     // caché propia: por texto (o por la marca si no hay texto) y filtrando por marca
-    const { data: cachedAll } = await supabase.rpc('search_products', { q: q || brand })
+    const { data: cachedAll } = await supabase.rpc('search_products', { q: q || brand || store })
     const brandOk = (p: any) => !nb || String(p.brand ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(nb)
-    const cached = (cachedAll ?? []).filter(brandOk)
+    // en caché solo se sabe el supermercado si el producto se guardó con ese dato
+    const storeOk = (p: any) => !ns || String(p.raw_json?.stores ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(ns)
+    const cached = (cachedAll ?? []).filter((p: any) => brandOk(p) && storeOk(p))
 
     const r = await fetch(
       `https://search.openfoodfacts.org/search?q=${encodeURIComponent(lucene)}&langs=es,en&page_size=25&fields=${FIELDS}`,

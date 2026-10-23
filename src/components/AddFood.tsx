@@ -112,9 +112,13 @@ function ScanTab({ onPick, onManual }: { onPick: (p: Product) => void; onManual:
   return <BarcodeScanner onDetect={onDetect} />
 }
 
+/** Sugerencias de supermercado (se puede escribir cualquier otro) */
+const STORES = ['Mercadona', 'Carrefour', 'Lidl', 'Dia', 'Alcampo', 'Eroski', 'Aldi', 'El Corte Inglés', 'Hipercor', 'Consum', 'Ahorramas', 'BM', 'Gadis', 'Bonpreu', 'Caprabo', 'Spar', 'Supercor', 'Costco']
+
 function SearchTab({ onPick }: { onPick: (p: Product) => void }) {
   const [q, setQ] = useState('')
   const [brand, setBrand] = useState('')
+  const [store, setStore] = useState('')
   const [onlySpain, setOnlySpain] = useState(() => { try { return localStorage.getItem('np-search-es') !== '0' } catch { return true } })
   const [res, setRes] = useState<Product[] | null>(null)
   const [busy, setBusy] = useState(false)
@@ -124,22 +128,25 @@ function SearchTab({ onPick }: { onPick: (p: Product) => void }) {
   })
   async function go(e: React.FormEvent) {
     e.preventDefault()
-    if (q.trim().length < 2 && brand.trim().length < 2) return
+    if (q.trim().length < 2 && brand.trim().length < 2 && store.trim().length < 2) return
     setBusy(true)
-    try { setRes(await searchProducts(q.trim(), { brand, onlySpain })) } catch { toast.err('Error en la búsqueda'); setRes([]) }
+    try { setRes(await searchProducts(q.trim(), { brand, store, onlySpain })) } catch { toast.err('Error en la búsqueda'); setRes([]) }
     setBusy(false)
   }
   return (
     <div className="stack">
       <form className="stack" style={{ gap: 8 }} onSubmit={go}>
         <input placeholder="Producto o código de barras" value={q} onChange={(e) => setQ(e.target.value)} autoFocus enterKeyHint="search" />
-        <div className="row">
-          <input className="grow" placeholder="Marca (opcional)" value={brand}
-            onChange={(e) => setBrand(e.target.value)} enterKeyHint="search" />
-          <button className="btn-primary" disabled={busy}>{busy ? <span className="spin" /> : <Search size={18} />}</button>
+        <div className="grid2">
+          <input placeholder="Marca (opcional)" value={brand} onChange={(e) => setBrand(e.target.value)} enterKeyHint="search" />
+          <input placeholder="Supermercado" value={store} list="np-stores" onChange={(e) => setStore(e.target.value)} enterKeyHint="search" />
+          <datalist id="np-stores">{STORES.map((s) => <option key={s} value={s} />)}</datalist>
         </div>
-        <div className="chips">
-          <button type="button" className={`chip ${onlySpain ? 'on' : ''}`} onClick={toggleSpain}>Solo productos de España</button>
+        <div className="row between">
+          <div className="chips">
+            <button type="button" className={`chip ${onlySpain ? 'on' : ''}`} onClick={toggleSpain}>Solo productos de España</button>
+          </div>
+          <button className="btn-primary" disabled={busy}>{busy ? <span className="spin" /> : <><Search size={18} /> Buscar</>}</button>
         </div>
       </form>
       {res && res.length === 0 && <Empty icon={SearchX}>Sin resultados</Empty>}
