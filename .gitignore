@@ -4,3 +4,5 @@ dist
 .env.local
 supabase/.temp
 *.tsbuildinfo
+harness.html
+src/dev-harness.tsx

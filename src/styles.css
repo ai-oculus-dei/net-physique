@@ -364,3 +364,11 @@ input.switch { appearance: none; -webkit-appearance: none; width: 46px; height: 
 input.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--faint); transition: transform .2s cubic-bezier(.2,.8,.2,1), background .2s; }
 input.switch:checked { background: color-mix(in srgb, var(--cyan) 25%, var(--bg-2)); border-color: var(--cyan); box-shadow: 0 0 10px -2px var(--cyan); }
 input.switch:checked::after { transform: translateX(18px); background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+
+/* Con el teclado abierto, las hojas inferiores se apoyan encima del teclado (no debajo) */
+:root { --kb: 0px; }
+.sheet-backdrop { padding-bottom: var(--kb); transition: padding-bottom .15s ease; }
+.sheet { max-height: calc(92dvh - var(--kb)); }
+.kb-open .sheet { border-radius: 22px; border-bottom: 1px solid var(--line-strong); }
+/* con el teclado abierto no hace falta la barra inferior ni el botón flotante */
+.kb-open .bottomnav, .kb-open .fab { display: none; }
