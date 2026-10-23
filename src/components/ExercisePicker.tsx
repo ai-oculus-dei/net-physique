@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { allExercises, createCustomExercise, filterExercises } from '../lib/exercises'
-import { Dumbbell, Lightbulb, PackageOpen, PenLine, Plus } from 'lucide-react'
+import { allExercises, createCustomExercise, deleteCustomExercise, filterExercises, updateCustomExercise } from '../lib/exercises'
+import { Dumbbell, Lightbulb, PackageOpen, PenLine, Pencil, Plus, Trash2 } from 'lucide-react'
 import { EQUIPMENT_ES, GROUPS, IMG_BASE, MUSCLE_LIST, muscleEs } from '../lib/muscles'
 import type { Exercise } from '../lib/types'
 import { Empty, Sheet, toast } from './ui'
@@ -29,7 +29,9 @@ export default function ExercisePicker({ open, onClose, onPick, initialMuscle }:
   return (
     <Sheet open={open} onClose={close} title={title}>
       {detail ? (
-        <ExerciseDetail e={detail} onPick={() => onPick(detail)} />
+        <ExerciseDetail e={detail} onPick={() => onPick(detail)}
+          onChanged={(x) => { setDetail(x); allExercises().then(setList) }}
+          onDeleted={() => { setDetail(null); allExercises().then(setList) }} />
       ) : creating ? (
         <CustomForm name={q} onBack={() => setCreating(false)} onCreated={(e) => { toast('Ejercicio guardado'); onPick(e) }} />
       ) : (
@@ -71,13 +73,27 @@ export default function ExercisePicker({ open, onClose, onPick, initialMuscle }:
   )
 }
 
-export function ExerciseDetail({ e, onPick }: { e: Exercise; onPick?: () => void }) {
+export function ExerciseDetail({ e: e0, onPick, onChanged, onDeleted }: {
+  e: Exercise; onPick?: () => void
+  /** ejercicio personalizado editado / borrado (para refrescar listas) */
+  onChanged?: (e: Exercise) => void; onDeleted?: () => void
+}) {
+  const [e, setE] = useState(e0)
+  const [editing, setEditing] = useState(false)
   const [img, setImg] = useState(0)
+  useEffect(() => { setE(e0); setEditing(false) }, [e0])
   useEffect(() => {
     if (e.images.length < 2) return
     const t = setInterval(() => setImg((i) => (i + 1) % e.images.length), 1100)
     return () => clearInterval(t)
   }, [e])
+  if (editing) {
+    return (
+      <CustomForm name={e.name} existing={e} onBack={() => setEditing(false)}
+        onCreated={(x) => { setE(x); setEditing(false); toast('Ejercicio actualizado'); onChanged?.(x) }}
+        onDeleted={() => { toast('Ejercicio eliminado'); onDeleted?.() }} />
+    )
+  }
   return (
     <div className="stack">
       {e.images.length > 0 && (
@@ -99,29 +115,41 @@ export function ExerciseDetail({ e, onPick }: { e: Exercise; onPick?: () => void
           </ol>
         </div>
       )}
+      {e.is_custom && <button className="btn-ghost btn-block" onClick={() => setEditing(true)}><Pencil size={16} /> Editar ejercicio</button>}
       {onPick && <button className="btn-primary btn-block" onClick={onPick}><Plus size={18} /> Añadir</button>}
     </div>
   )
 }
 
-function CustomForm({ name: name0, onBack, onCreated }: { name: string; onBack: () => void; onCreated: (e: Exercise) => void }) {
-  const [name, setName] = useState(name0)
-  const [prim, setPrim] = useState<string[]>([])
-  const [sec, setSec] = useState<string[]>([])
-  const [category, setCategory] = useState('strength')
-  const [equipment, setEquipment] = useState('body only')
-  const [tips, setTips] = useState('')
+/** Crear (o editar si se pasa `existing`) un ejercicio personalizado */
+function CustomForm({ name: name0, existing, onBack, onCreated, onDeleted }: {
+  name: string; existing?: Exercise; onBack: () => void; onCreated: (e: Exercise) => void; onDeleted?: () => void
+}) {
+  const [name, setName] = useState(existing?.name ?? name0)
+  const [prim, setPrim] = useState<string[]>(existing?.primary_muscles ?? [])
+  const [sec, setSec] = useState<string[]>(existing?.secondary_muscles ?? [])
+  const [category, setCategory] = useState(existing?.category ?? 'strength')
+  const [equipment, setEquipment] = useState(existing?.equipment ?? 'body only')
+  const [tips, setTips] = useState((existing?.instructions ?? []).join('\n'))
+  const [busy, setBusy] = useState(false)
   const toggle = (arr: string[], set: (v: string[]) => void, m: string) => set(arr.includes(m) ? arr.filter((x) => x !== m) : [...arr, m])
 
   async function save(ev: React.FormEvent) {
     ev.preventDefault()
     if (!prim.length) return toast('Elige al menos un músculo principal')
+    const fields = {
+      name: name.trim(), primary_muscles: prim, secondary_muscles: sec.filter((m) => !prim.includes(m)), category, equipment,
+      instructions: tips.split('\n').map((s) => s.trim()).filter(Boolean),
+    }
+    setBusy(true)
     try {
-      onCreated(await createCustomExercise({
-        name, primary_muscles: prim, secondary_muscles: sec, category, equipment,
-        instructions: tips.split('\n').map((s) => s.trim()).filter(Boolean),
-      }))
-    } catch (err: any) { toast.err(err.message) }
+      onCreated(existing ? await updateCustomExercise(existing.id, fields) : await createCustomExercise(fields))
+    } catch (err: any) { toast.err(err.message) } finally { setBusy(false) }
+  }
+
+  async function remove() {
+    if (!existing || !confirm(`¿Eliminar "${existing.name}" del catálogo?`)) return
+    try { await deleteCustomExercise(existing.id); onDeleted?.() } catch (err: any) { toast.err(err.message) }
   }
 
   return (
@@ -150,8 +178,9 @@ function CustomForm({ name: name0, onBack, onCreated }: { name: string; onBack: 
       <label className="field"><span>Consejos (uno por línea)</span><textarea rows={3} value={tips} onChange={(e) => setTips(e.target.value)} /></label>
       <div className="grid2">
         <button type="button" className="btn-ghost" onClick={onBack}>‹ Volver</button>
-        <button className="btn-primary">Guardar</button>
+        <button className="btn-primary" disabled={busy}>{busy ? <span className="spin" /> : 'Guardar'}</button>
       </div>
+      {existing && <button type="button" className="btn-danger" onClick={remove}><Trash2 size={16} /> Eliminar ejercicio</button>}
     </form>
   )
 }

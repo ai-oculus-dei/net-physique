@@ -38,3 +38,24 @@ export async function createCustomExercise(e: Pick<Exercise, 'name' | 'primary_m
   cache?.push(row as Exercise)
   return row as Exercise
 }
+
+type CustomFields = Pick<Exercise, 'name' | 'primary_muscles' | 'secondary_muscles' | 'equipment' | 'category' | 'instructions'>
+
+/** Editar un ejercicio personalizado (compartido entre los dos usuarios) */
+export async function updateCustomExercise(id: string, fields: CustomFields): Promise<Exercise> {
+  const { data, error } = await supabase.from('exercises').update(fields).eq('id', id).eq('is_custom', true).select().single()
+  if (error) throw error
+  const updated = data as Exercise
+  if (cache) cache = cache.map((e) => (e.id === id ? updated : e))
+  return updated
+}
+
+/** Borrar un ejercicio personalizado (no se puede si ya se usa en algún entreno) */
+export async function deleteCustomExercise(id: string) {
+  const { error } = await supabase.from('exercises').delete().eq('id', id).eq('is_custom', true)
+  if (error) {
+    if (error.code === '23503') throw new Error('Está en algún entreno registrado: no se puede borrar, pero sí editar.')
+    throw error
+  }
+  if (cache) cache = cache.filter((e) => e.id !== id)
+}
