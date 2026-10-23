@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import AddFood from '../components/AddFood'
 import BalanceCard from '../components/BalanceCard'
 import Planner from '../components/Planner'
+import EditFoodLog from '../components/EditFoodLog'
 import DayPicker from '../components/DayPicker'
 import { Bar, Empty, Ring, r0, toast } from '../components/ui'
 import { hhmm, ymd } from '../lib/dates'
@@ -26,6 +27,7 @@ export default function Diet() {
   const [logs, setLogs] = useState<FoodLog[]>([])
   const [adding, setAdding] = useState<Meal | null>(null)
   const [planning, setPlanning] = useState(false)
+  const [editing, setEditing] = useState<FoodLog | null>(null)
   const { energy } = useDayEnergy(day)
 
   const load = useCallback(async () => {
@@ -135,13 +137,13 @@ export default function Diet() {
               {items.length > 0 && (
                 <div className="list" style={{ marginTop: 6 }}>
                   {items.map((l) => (
-                    <div key={l.id} className="list-item">
+                    <div key={l.id} className="list-item tappable" onClick={() => setEditing(l)}>
                       <div className="grow">
                         <div className="ellipsis">{l.barcode?.startsWith('dish-') && <ChefHat size={13} color="var(--amber)" style={{ marginRight: 4, verticalAlign: -1 }} />}{l.name}</div>
                         <div className="small muted mono">{hhmm(l.eaten_at)} · {r0(l.grams)} {l.unit ?? 'g'} · P{r0(l.protein)} C{r0(l.carbs)} G{r0(l.fat)}</div>
                       </div>
                       <span className="mono">{r0(l.kcal)}</span>
-                      <button className="btn-icon btn-ghost" onClick={() => remove(l.id)} aria-label="Eliminar"><X size={16} /></button>
+                      <button className="btn-icon btn-ghost" onClick={(e) => { e.stopPropagation(); remove(l.id) }} aria-label="Eliminar"><X size={16} /></button>
                     </div>
                   ))}
                 </div>
@@ -155,6 +157,8 @@ export default function Diet() {
       <button className="btn-primary fab" onClick={() => setAdding(mealForNow())}>
         <ScanBarcode size={18} /> Añadir
       </button>
+
+      <EditFoodLog log={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load() }} />
 
       <Planner open={planning} onClose={() => setPlanning(false)} day={day} consumed={total}
         target={energy ? { kcal: energy.kcal, protein: energy.protein, carbs: energy.carbs, fat: energy.fat } : null}

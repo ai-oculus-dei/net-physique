@@ -372,3 +372,4 @@ input.switch:checked::after { transform: translateX(18px); background: var(--cya
 .kb-open .sheet { border-radius: 22px; border-bottom: 1px solid var(--line-strong); }
 /* con el teclado abierto no hace falta la barra inferior ni el botón flotante */
 .kb-open .bottomnav, .kb-open .fab { display: none; }
+.list-item.tappable { cursor: pointer; } .list-item.tappable:active { background: color-mix(in srgb, var(--cyan) 6%, transparent); }
