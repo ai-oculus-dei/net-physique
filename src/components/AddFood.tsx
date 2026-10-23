@@ -159,23 +159,39 @@ function SearchTab({ onPick }: { onPick: (p: Product) => void }) {
   )
 }
 
+type HistoryKind = 'all' | 'eaten' | 'dishes'
+
+/** Texto de un producto del histórico: última cantidad comida y/o platos en los que es ingrediente */
+function historyExtra(p: RecentProduct) {
+  const parts: string[] = []
+  if (p.lastGrams != null) parts.push(`últ. ${r0(p.lastGrams)} ${unitOf(p)}`)
+  if (p.inDishes.length) parts.push(`en: ${p.inDishes[0]}${p.inDishes.length > 1 ? ` +${p.inDishes.length - 1}` : ''}`)
+  return parts.join(' · ')
+}
+
 function HistoryTab({ onPick }: { onPick: (p: Product, g?: number) => void }) {
   const [list, setList] = useState<RecentProduct[] | null>(null)
   const [f, setF] = useState('')
+  const [kind, setKind] = useState<HistoryKind>('all')
   const people = usePeople()
   const [who, setWho] = useState('all')
   useEffect(() => { recentProducts().then(setList) }, [])
   if (!list) return <div className="empty"><span className="spin" /></div>
   if (!list.length) return <Empty icon={History}>Aún no hay histórico. Escanea o busca tu primer producto.</Empty>
-  const shown = fuzzyFilter(who === 'all' ? list : list.filter((p) => p.eatenBy.includes(who)), f, (p) => `${p.name} ${p.brand ?? ''}`, (p) => p.name)
+  const byKind = list.filter((p) => kind === 'all' || (kind === 'eaten' ? p.eaten : p.inDishes.length > 0))
+  // persona: quien lo comió o quien creó un plato que lo lleva
+  const byWho = who === 'all' ? byKind : byKind.filter((p) => p.eatenBy.includes(who) || p.dishCreators.includes(who))
+  const shown = fuzzyFilter(byWho, f, (p) => `${p.name} ${p.brand ?? ''}`, (p) => p.name)
   return (
     <div className="stack">
       <input placeholder="Buscar en el histórico (de los dos)…" value={f} onChange={(e) => setF(e.target.value)} />
-      <PersonSelect label="Comido por" value={who} onChange={setWho} people={people} />
+      <Seg variant="full" value={kind} onChange={setKind}
+        options={[{ id: 'all', label: 'Todo' }, { id: 'eaten', label: 'Comido' }, { id: 'dishes', label: 'En platos' }]} />
+      <PersonSelect label="Persona" value={who} onChange={setWho} people={people} />
       {!shown.length && <div className="empty small">Nada con ese filtro.</div>}
       <div className="list">
-        {shown.map((p) => <ProductRow key={p.barcode} p={p} extra={`últ. ${r0(p.lastGrams)} ${unitOf(p)}`}
-          shared={!p.mine} onClick={() => onPick(p, p.lastGrams)} />)}
+        {shown.map((p) => <ProductRow key={p.barcode} p={p} extra={historyExtra(p)}
+          shared={!p.mine} onClick={() => onPick(p, p.lastGrams ?? undefined)} />)}
       </div>
     </div>
   )

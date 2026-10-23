@@ -11,7 +11,7 @@ import { MEALS, isDish, type Meal, type Product } from '../lib/types'
 import { unitOf } from '../lib/units'
 import { fuzzyFilter } from '../lib/search'
 
-type Candidate = Product & { lastGrams?: number }
+type Candidate = Product & { lastGrams?: number | null }
 type Kind = 'all' | 'dish' | 'food'
 interface Item extends PlanItem { suggested: number }
 
@@ -60,7 +60,8 @@ export default function Planner({ open, onClose, day, consumed, target, onLogged
   useEffect(() => {
     if (!open) return
     // histórico + todos los platos (aunque aún no se hayan comido)
-    Promise.all([recentProducts(150), listDishes()]).then(([recent, dishes]) => {
+    // el planificador es para elegir qué comer: solo lo comido (no ingredientes sueltos) + platos
+    Promise.all([recentProducts(150).then((r) => r.filter((p) => p.eaten)), listDishes()]).then(([recent, dishes]) => {
       const seen = new Set(recent.map((p) => p.barcode))
       setCands([...recent, ...dishes.filter((d) => !seen.has(d.barcode))])
     }).catch(() => setCands([]))

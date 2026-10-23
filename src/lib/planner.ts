@@ -35,4 +35,4 @@ export function projectPlan(consumed: Macros, items: PlanItem[], target: Macros)
 }
 
 /** Cantidad sugerida al añadir al plan: la última que se comió, la ración o 100 g */
-export const suggestedGrams = (p: Product & { lastGrams?: number }) => Number(p.lastGrams || p.serving_g || 100)
+export const suggestedGrams = (p: Product & { lastGrams?: number | null }) => Number(p.lastGrams || p.serving_g || 100)

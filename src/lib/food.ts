@@ -59,22 +59,64 @@ export async function saveManualProduct(p: Omit<Product, 'barcode'> & { barcode?
   return row as Product
 }
 
-export type RecentProduct = Product & { lastGrams: number; mine: boolean; eatenBy: string[] }
+export type RecentProduct = Product & {
+  /** última cantidad comida (null si solo se ha usado como ingrediente de platos) */
+  lastGrams: number | null
+  /** lo ha comido o usado en un plato el usuario actual */
+  mine: boolean
+  /** quiénes lo han comido */
+  eatenBy: string[]
+  /** se ha registrado como comido alguna vez */
+  eaten: boolean
+  /** platos en los que es ingrediente */
+  inDishes: string[]
+  /** quiénes crearon esos platos */
+  dishCreators: string[]
+  lastAt: string
+}
 
 /**
- * Histórico compartido: productos usados recientemente por cualquiera de los dos (sin duplicados).
- * La cantidad sugerida es la propia más reciente; `mine` = false si solo lo ha comido el otro.
+ * Histórico compartido: productos comidos por cualquiera de los dos + ingredientes de los platos (sin duplicados).
+ * Los ingredientes no cuentan como comidos (no suman kcal): solo aparecen para tenerlos a mano.
+ * La cantidad sugerida es la propia comida más reciente; para un ingrediente solo de platos, su ración o 100 g.
  */
-export async function recentProducts(limit = 60): Promise<RecentProduct[]> {
-  const { data: recent, error } = await supabase.rpc('shared_recent_products', { p_limit: limit })
-  if (error || !recent?.length) return []
-  const codes = (recent as any[]).map((r) => r.barcode)
-  const { data: products } = await supabase.from('products').select('*').in('barcode', codes)
-  const byCode = new Map(((products ?? []) as Product[]).map((p) => [p.barcode, p]))
-  return (recent as any[]).flatMap((r) => {
-    const p = byCode.get(r.barcode)
-    return p ? [{ ...p, lastGrams: Number(r.last_grams), mine: Boolean(r.mine), eatenBy: (r.eaten_by ?? []) as string[] }] : []
-  })
+export async function recentProducts(limit = 80): Promise<RecentProduct[]> {
+  const [{ data: recent }, { data: ingredients }, { data: session }] = await Promise.all([
+    supabase.rpc('shared_recent_products', { p_limit: limit }),
+    supabase.from('dish_ingredients')
+      .select('barcode, dish:products!dish_ingredients_dish_barcode_fkey(name, created_by, updated_at, created_at)')
+      .not('barcode', 'is', null).limit(2000),
+    supabase.auth.getSession(),
+  ])
+  const me = session.session?.user.id
+
+  type Entry = Omit<RecentProduct, keyof Product>
+  const byCode = new Map<string, Entry>()
+  for (const r of (recent ?? []) as any[]) {
+    byCode.set(r.barcode, {
+      lastGrams: Number(r.last_grams), mine: Boolean(r.mine), eatenBy: r.eaten_by ?? [], eaten: true,
+      inDishes: [], dishCreators: [], lastAt: r.last_at,
+    })
+  }
+  for (const r of (ingredients ?? []) as any[]) {
+    if (!r.dish || String(r.barcode).startsWith('dish-')) continue
+    const at = r.dish.updated_at ?? r.dish.created_at
+    const e: Entry = byCode.get(r.barcode) ?? {
+      lastGrams: null, mine: false, eatenBy: [], eaten: false, inDishes: [], dishCreators: [], lastAt: at,
+    }
+    if (!e.inDishes.includes(r.dish.name)) e.inDishes.push(r.dish.name)
+    if (r.dish.created_by && !e.dishCreators.includes(r.dish.created_by)) e.dishCreators.push(r.dish.created_by)
+    if (r.dish.created_by === me) e.mine = true
+    if (at > e.lastAt) e.lastAt = at
+    byCode.set(r.barcode, e)
+  }
+  if (!byCode.size) return []
+
+  const { data: products } = await supabase.from('products').select('*').in('barcode', [...byCode.keys()])
+  return ((products ?? []) as Product[])
+    .filter((p) => byCode.has(p.barcode))
+    .map((p) => ({ ...p, ...byCode.get(p.barcode)! }))
+    .sort((a, b) => (a.lastAt < b.lastAt ? 1 : -1))
 }
 
 export function macrosFor(p: Product, grams: number) {
