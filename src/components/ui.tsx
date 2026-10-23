@@ -193,6 +193,22 @@ export function NumInput({ value, onChange, decimal = true, negative = false, fa
   )
 }
 
+/** Desplegable de persona: Todos / cada usuario */
+export function PersonSelect({ value, onChange, people, label }: {
+  value: string; onChange: (v: string) => void; people: { id: string; name: string }[]; label: string
+}) {
+  if (people.length < 2) return null
+  return (
+    <label className="person-select">
+      <span className="small muted">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="all">Todos</option>
+        {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+    </label>
+  )
+}
+
 /** Interruptor con etiqueta (se aplica al instante) */
 export function Switch({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: ReactNode; hint?: ReactNode }) {
   return (

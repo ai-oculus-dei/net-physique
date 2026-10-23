@@ -373,3 +373,5 @@ input.switch:checked::after { transform: translateX(18px); background: var(--cya
 /* con el teclado abierto no hace falta la barra inferior ni el botón flotante */
 .kb-open .bottomnav, .kb-open .fab { display: none; }
 .list-item.tappable { cursor: pointer; } .list-item.tappable:active { background: color-mix(in srgb, var(--cyan) 6%, transparent); }
+.person-select { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.person-select select { width: auto; min-width: 130px; padding: 8px 10px; }

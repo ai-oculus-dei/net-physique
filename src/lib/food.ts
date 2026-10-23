@@ -41,7 +41,7 @@ export async function saveManualProduct(p: Omit<Product, 'barcode'> & { barcode?
   return row as Product
 }
 
-export type RecentProduct = Product & { lastGrams: number; mine: boolean }
+export type RecentProduct = Product & { lastGrams: number; mine: boolean; eatenBy: string[] }
 
 /**
  * Histórico compartido: productos usados recientemente por cualquiera de los dos (sin duplicados).
@@ -55,7 +55,7 @@ export async function recentProducts(limit = 60): Promise<RecentProduct[]> {
   const byCode = new Map(((products ?? []) as Product[]).map((p) => [p.barcode, p]))
   return (recent as any[]).flatMap((r) => {
     const p = byCode.get(r.barcode)
-    return p ? [{ ...p, lastGrams: Number(r.last_grams), mine: Boolean(r.mine) }] : []
+    return p ? [{ ...p, lastGrams: Number(r.last_grams), mine: Boolean(r.mine), eatenBy: (r.eaten_by ?? []) as string[] }] : []
   })
 }
 

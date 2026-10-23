@@ -53,6 +53,8 @@ export interface Product {
   dish_total_g?: number | null
   /** los valores son por 100 g ('g') o por 100 ml ('ml', líquidos) */
   unit?: 'g' | 'ml'
+  /** quién lo añadió al catálogo (en platos: quién lo creó) */
+  created_by?: string | null
 }
 
 export const isDish = (p: Pick<Product, 'source'>) => p.source === 'dish'

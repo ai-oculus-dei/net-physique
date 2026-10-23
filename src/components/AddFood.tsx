@@ -3,8 +3,9 @@ import { useCallback, useEffect, useState } from 'react'
 import BarcodeScanner from './BarcodeScanner'
 import DishComposition from './DishComposition'
 import DishEditor from './DishEditor'
-import { decimalText, Empty, Seg, Sheet, num, r0, r1, toast } from './ui'
+import { decimalText, Empty, PersonSelect, Seg, Sheet, num, r0, r1, toast } from './ui'
 import { fuzzyFilter } from '../lib/search'
+import { usePeople } from '../lib/people'
 import { ensureCached, lookupBarcode, type RecentProduct, macrosFor, recentProducts, saveManualProduct, searchProducts, setProductUnit } from '../lib/food'
 import { unitOf, type FoodUnit } from '../lib/units'
 import { listDishes } from '../lib/dishes'
@@ -140,13 +141,17 @@ function SearchTab({ onPick }: { onPick: (p: Product) => void }) {
 function HistoryTab({ onPick }: { onPick: (p: Product, g?: number) => void }) {
   const [list, setList] = useState<RecentProduct[] | null>(null)
   const [f, setF] = useState('')
+  const people = usePeople()
+  const [who, setWho] = useState('all')
   useEffect(() => { recentProducts().then(setList) }, [])
   if (!list) return <div className="empty"><span className="spin" /></div>
   if (!list.length) return <Empty icon={History}>Aún no hay histórico. Escanea o busca tu primer producto.</Empty>
-  const shown = fuzzyFilter(list, f, (p) => `${p.name} ${p.brand ?? ''}`, (p) => p.name)
+  const shown = fuzzyFilter(who === 'all' ? list : list.filter((p) => p.eatenBy.includes(who)), f, (p) => `${p.name} ${p.brand ?? ''}`, (p) => p.name)
   return (
     <div className="stack">
       <input placeholder="Buscar en el histórico (de los dos)…" value={f} onChange={(e) => setF(e.target.value)} />
+      <PersonSelect label="Comido por" value={who} onChange={setWho} people={people} />
+      {!shown.length && <div className="empty small">Nada con ese filtro.</div>}
       <div className="list">
         {shown.map((p) => <ProductRow key={p.barcode} p={p} extra={`últ. ${r0(p.lastGrams)} ${unitOf(p)}`}
           shared={!p.mine} onClick={() => onPick(p, p.lastGrams)} />)}
@@ -160,14 +165,19 @@ function DishesTab({ onPick }: { onPick: (p: Product) => void }) {
   const [list, setList] = useState<Product[] | null>(null)
   const [f, setF] = useState('')
   const [editing, setEditing] = useState<Product | 'new' | null>(null)
+  const people = usePeople()
+  const [who, setWho] = useState('all')
+  const nameOf = (id?: string | null) => people.find((p) => p.id === id)?.name
   const load = () => listDishes().then(setList)
   useEffect(() => { load() }, [])
 
-  const shown = fuzzyFilter(list ?? [], f, (p) => p.name)
+  const shown = fuzzyFilter((list ?? []).filter((p) => who === 'all' || p.created_by === who), f, (p) => p.name)
   return (
     <div className="stack">
       <button className="btn-primary" onClick={() => setEditing('new')}><Plus size={17} /> Crear plato</button>
       {list && list.length > 4 && <input placeholder="Filtrar platos…" value={f} onChange={(e) => setF(e.target.value)} />}
+      {list && list.length > 0 && <PersonSelect label="Creado por" value={who} onChange={setWho} people={people} />}
+      {list && list.length > 0 && !shown.length && <div className="empty small">Nada con ese filtro.</div>}
       {!list && <div className="empty"><span className="spin" /></div>}
       {list && !list.length && (
         <Empty icon={ChefHat}>Aún no hay platos. Crea uno con sus ingredientes y se calcularán las kcal por 100 g.</Empty>
@@ -175,6 +185,7 @@ function DishesTab({ onPick }: { onPick: (p: Product) => void }) {
       <div className="list">
         {shown.map((p) => (
           <ProductRow key={p.barcode} p={p} onClick={() => onPick(p)}
+            extra={nameOf(p.created_by) ? `de ${nameOf(p.created_by)}` : undefined}
             action={
               <button className="btn-icon btn-ghost" aria-label="Editar plato"
                 onClick={(e) => { e.stopPropagation(); setEditing(p) }}><Pencil size={16} /></button>
