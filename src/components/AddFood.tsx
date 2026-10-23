@@ -1,5 +1,6 @@
 import { ChefHat, History, Users, Package, PenLine, Pencil, Plus, ScanBarcode, Search, SearchX, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import MealSelect from './MealSelect'
 import BarcodeScanner from './BarcodeScanner'
 import DishComposition from './DishComposition'
 import DishEditor from './DishEditor'
@@ -329,9 +330,7 @@ export function PortionForm({ product: product0, meal: meal0, day, defaultGrams,
           <button key={x} className={`chip ${g === x ? 'on' : ''}`} onClick={() => setGrams(String(x))}>{x} {unit}{x === product.serving_g ? ' (ración)' : ''}</button>
         ))}
       </div>
-      <div className="chips">
-        {MEALS.map((x) => <button key={x.id} className={`chip ${meal === x.id ? 'on' : ''}`} onClick={() => setMeal(x.id)}><x.icon size={14} /> {x.label}</button>)}
-      </div>
+      <MealSelect value={meal} onChange={setMeal} />
       <div className="card grid3" style={{ gridTemplateColumns: 'repeat(4, 1fr)', padding: 12 }}>
         <div className="kpi"><span className="v" style={{ fontSize: 18 }}>{r0(m.kcal)}</span><span className="l">kcal</span></div>
         <div className="kpi"><span className="v" style={{ fontSize: 18, color: 'var(--protein)' }}>{r1(m.protein)}</span><span className="l">Prot</span></div>

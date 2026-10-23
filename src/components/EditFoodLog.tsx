@@ -1,8 +1,9 @@
 import { ChefHat, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import MealSelect from './MealSelect'
 import { NumInput, Sheet, r0, r1, toast } from './ui'
 import { supabase } from '../lib/supabase'
-import { MEALS, type FoodLog, type Meal } from '../lib/types'
+import type { FoodLog, Meal } from '../lib/types'
 
 const hhmmLocal = (ts: string) => {
   const d = new Date(ts)
@@ -66,9 +67,7 @@ export default function EditFoodLog({ log, onClose, onSaved }: { log: FoodLog | 
           <label className="field"><span>Hora</span><input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></label>
         </div>
         <label className="field"><span>Día</span><input type="date" value={day} onChange={(e) => setDay(e.target.value)} /></label>
-        <div className="chips">
-          {MEALS.map((x) => <button key={x.id} className={`chip ${meal === x.id ? 'on' : ''}`} onClick={() => setMeal(x.id)}><x.icon size={14} /> {x.label}</button>)}
-        </div>
+        <MealSelect value={meal} onChange={setMeal} />
         <div className="card grid3" style={{ gridTemplateColumns: 'repeat(4, 1fr)', padding: 12 }}>
           <div className="kpi"><span className="v" style={{ fontSize: 18 }}>{r0(m.kcal)}</span><span className="l">kcal</span></div>
           <div className="kpi"><span className="v" style={{ fontSize: 18, color: 'var(--protein)' }}>{r1(m.protein)}</span><span className="l">Prot</span></div>

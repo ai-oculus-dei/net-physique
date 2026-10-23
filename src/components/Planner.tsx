@@ -1,5 +1,6 @@
 import { CalendarRange, ChefHat, Check, ListChecks, Package, Plus, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import MealSelect from './MealSelect'
 import { DishTag } from './AddFood'
 import { NumInput, Sheet, r0, toast } from './ui'
 import { listDishes } from '../lib/dishes'
@@ -153,9 +154,7 @@ export default function Planner({ open, onClose, day, consumed, target, onLogged
                 )
               })}
             </div>
-            <div className="chips" style={{ marginTop: 10 }}>
-              {MEALS.map((x) => <button key={x.id} className={`chip ${meal === x.id ? 'on' : ''}`} onClick={() => setMeal(x.id)}><x.icon size={14} /> {x.label}</button>)}
-            </div>
+            <div style={{ marginTop: 10 }}><MealSelect value={meal} onChange={setMeal} /></div>
             <button className="btn-primary btn-block" style={{ marginTop: 10 }} disabled={busy} onClick={logAll}>
               {busy ? <span className="spin" /> : <><Check size={17} /> Registrar preselección</>}
             </button>
