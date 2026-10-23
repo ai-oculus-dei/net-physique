@@ -17,12 +17,18 @@ export async function lookupBarcode(barcode: string): Promise<Product | null> {
   return list[0] ?? null
 }
 
-export async function searchProducts(q: string): Promise<Product[]> {
-  if (/^\d{8,14}$/.test(q)) {
+/** Búsqueda por texto y/o marca (en caché y en Open Food Facts); onlySpain filtra productos vendidos en España */
+export async function searchProducts(q: string, opts: { brand?: string; onlySpain?: boolean } = {}): Promise<Product[]> {
+  const brand = opts.brand?.trim() ?? ''
+  if (!brand && /^\d{8,14}$/.test(q)) {
     const p = await lookupBarcode(q)
     return p ? [p] : []
   }
-  return invoke({ q })
+  const params: Record<string, string> = {}
+  if (q) params.q = q
+  if (brand) params.brand = brand
+  if (opts.onlySpain) params.es = '1'
+  return invoke(params)
 }
 
 /** Guarda un producto de búsqueda remota en la caché al usarlo */

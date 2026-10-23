@@ -114,20 +114,33 @@ function ScanTab({ onPick, onManual }: { onPick: (p: Product) => void; onManual:
 
 function SearchTab({ onPick }: { onPick: (p: Product) => void }) {
   const [q, setQ] = useState('')
+  const [brand, setBrand] = useState('')
+  const [onlySpain, setOnlySpain] = useState(() => { try { return localStorage.getItem('np-search-es') !== '0' } catch { return true } })
   const [res, setRes] = useState<Product[] | null>(null)
   const [busy, setBusy] = useState(false)
+  const toggleSpain = () => setOnlySpain((v) => {
+    try { localStorage.setItem('np-search-es', v ? '0' : '1') } catch { /* sin storage */ }
+    return !v
+  })
   async function go(e: React.FormEvent) {
     e.preventDefault()
-    if (q.trim().length < 2) return
+    if (q.trim().length < 2 && brand.trim().length < 2) return
     setBusy(true)
-    try { setRes(await searchProducts(q.trim())) } catch { toast.err('Error en la búsqueda'); setRes([]) }
+    try { setRes(await searchProducts(q.trim(), { brand, onlySpain })) } catch { toast.err('Error en la búsqueda'); setRes([]) }
     setBusy(false)
   }
   return (
     <div className="stack">
-      <form className="row" onSubmit={go}>
-        <input className="grow" placeholder="Nombre, marca o código de barras" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
-        <button className="btn-primary" disabled={busy}>{busy ? <span className="spin" /> : <Search size={18} />}</button>
+      <form className="stack" style={{ gap: 8 }} onSubmit={go}>
+        <input placeholder="Producto o código de barras" value={q} onChange={(e) => setQ(e.target.value)} autoFocus enterKeyHint="search" />
+        <div className="row">
+          <input className="grow" placeholder="Marca (opcional)" value={brand}
+            onChange={(e) => setBrand(e.target.value)} enterKeyHint="search" />
+          <button className="btn-primary" disabled={busy}>{busy ? <span className="spin" /> : <Search size={18} />}</button>
+        </div>
+        <div className="chips">
+          <button type="button" className={`chip ${onlySpain ? 'on' : ''}`} onClick={toggleSpain}>Solo productos de España</button>
+        </div>
       </form>
       {res && res.length === 0 && <Empty icon={SearchX}>Sin resultados</Empty>}
       <div className="list">

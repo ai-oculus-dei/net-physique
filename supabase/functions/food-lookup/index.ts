@@ -73,10 +73,21 @@ Deno.serve(async (req) => {
     return json({ products: [row], source: 'off' })
   }
 
-  if (q) {
-    const { data: cached } = await supabase.rpc('search_products', { q })
+  // texto + marca opcional + solo productos de España
+  const brand = url.searchParams.get('brand')?.trim() ?? ''
+  const spain = url.searchParams.get('es') === '1'
+  if (q || brand) {
+    // marca sin tildes ni comillas (el índice de OFF guarda las marcas normalizadas)
+    const nb = brand.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/["\\]/g, '').trim()
+    const lucene = [q, nb && `brands:"${nb}"`, spain && 'countries_tags:"en:spain"'].filter(Boolean).join(' ')
+
+    // caché propia: por texto (o por la marca si no hay texto) y filtrando por marca
+    const { data: cachedAll } = await supabase.rpc('search_products', { q: q || brand })
+    const brandOk = (p: any) => !nb || String(p.brand ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(nb)
+    const cached = (cachedAll ?? []).filter(brandOk)
+
     const r = await fetch(
-      `https://search.openfoodfacts.org/search?q=${encodeURIComponent(q)}&langs=es,en&page_size=20&fields=${FIELDS}`,
+      `https://search.openfoodfacts.org/search?q=${encodeURIComponent(lucene)}&langs=es,en&page_size=25&fields=${FIELDS}`,
       { headers: { 'User-Agent': UA } },
     ).catch(() => null)
     let remote: ReturnType<typeof toRow>[] = []
@@ -84,8 +95,8 @@ Deno.serve(async (req) => {
       const body = await r.json()
       remote = (body.hits ?? []).filter((h: Off) => h.code && h.nutriments).map(toRow)
     }
-    const seen = new Set((cached ?? []).map((p: any) => p.barcode))
-    return json({ products: [...(cached ?? []), ...remote.filter((p) => !seen.has(p.barcode))], source: 'mixed' })
+    const seen = new Set(cached.map((p: any) => p.barcode))
+    return json({ products: [...cached, ...remote.filter((p) => !seen.has(p.barcode))], source: 'mixed' })
   }
 
   return json({ error: 'barcode o q requerido' }, 400)
