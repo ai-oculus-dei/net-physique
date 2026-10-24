@@ -20,10 +20,32 @@ export function bmrKatch(kg: number, bodyFatPct: number): number {
   return 370 + 21.6 * lbm
 }
 
+/** Preferencia de fórmula del basal (perfil) */
+export type BmrFormula = 'auto' | 'mifflin' | 'katch'
+export const BMR_FORMULA_NAME = { mifflin: 'Mifflin-St Jeor', katch: 'Katch-McArdle' } as const
+
+const validBodyFat = (bf?: number | null): bf is number => bf != null && bf > 3 && bf < 60
+
+export interface BmrDetail {
+  kcal: number
+  /** fórmula realmente usada */
+  used: 'mifflin' | 'katch'
+  /** se pidió Katch-McArdle pero no hay % de grasa válido: se usó Mifflin */
+  fallback: boolean
+}
+
+/**
+ * Basal según la preferencia: 'auto' usa Katch-McArdle si hay % de grasa y si no Mifflin-St Jeor;
+ * 'katch' sin % de grasa cae a Mifflin (fallback).
+ */
+export function bmrDetail(formula: BmrFormula, sex: Sex, kg: number, cm: number, age: number, bodyFatPct?: number | null): BmrDetail {
+  const hasBf = validBodyFat(bodyFatPct)
+  if (formula !== 'mifflin' && hasBf) return { kcal: bmrKatch(kg, bodyFatPct), used: 'katch', fallback: false }
+  return { kcal: bmrMifflin(sex, kg, cm, age), used: 'mifflin', fallback: formula === 'katch' }
+}
+
 export function bmr(sex: Sex, kg: number, cm: number, age: number, bodyFatPct?: number | null): number {
-  return bodyFatPct != null && bodyFatPct > 3 && bodyFatPct < 60
-    ? bmrKatch(kg, bodyFatPct)
-    : bmrMifflin(sex, kg, cm, age)
+  return bmrDetail('auto', sex, kg, cm, age, bodyFatPct).kcal
 }
 
 export function activityFactor(level: number): number {

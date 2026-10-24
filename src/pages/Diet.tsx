@@ -94,7 +94,8 @@ export default function Diet() {
               </div>
               {energy && (
                 <div className="small muted mono row wrap" style={{ gap: 8 }}>
-                  <span>basal {r0(energy.bmr)}{energy.factorUsed ? ` ×${energy.factorUsed}` : ''}</span>
+                  <span title={energy.bmrFormula === 'katch' ? 'Katch-McArdle (con % de grasa)' : 'Mifflin-St Jeor'}>
+                    basal {r0(energy.bmr)} <span className="faint">({energy.bmrFormula === 'katch' ? 'Katch' : 'Mifflin'})</span>{energy.factorUsed ? ` ×${energy.factorUsed}` : ''}</span>
                   <span className="ic"><Footprints size={12} /> {r0(energy.stepsKcal)}</span>
                   <span className="ic"><Dumbbell size={12} /> {r0(energy.trainingKcal)}</span>
                 </div>

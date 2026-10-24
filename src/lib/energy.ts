@@ -3,13 +3,18 @@ import { supabase } from './supabase'
 import { addDays } from './dates'
 import {
   BASELINE_FACTOR, MET_BY_CATEGORY, STRENGTH_MET, activityFactor, adaptiveFactor, ageFromBirthdate,
-  bmr, dynamicTdee, macroTargets, metKcal, setsMinutes, stepsKcal, type MacroTargets,
+  bmrDetail, dynamicTdee, macroTargets, type BmrDetail, type BmrFormula, metKcal, setsMinutes, stepsKcal, type MacroTargets,
 } from './formulas'
 import type { Profile, WorkoutSet } from './types'
 import { cardioKcal, type Body, type CardioResult } from './cardio'
 
 export interface DayEnergy extends MacroTargets {
   bmr: number
+  /** fórmula del basal usada y si hubo que caer a Mifflin */
+  bmrFormula: BmrDetail['used']
+  bmrFallback: boolean
+  /** % de grasa usado (Katch-McArdle) o el último disponible */
+  bodyFat: { pct: number; day: string } | null
   tdee: number
   stepsKcal: number
   trainingKcal: number
@@ -59,23 +64,30 @@ export function bodyFrom(profile: Pick<Profile, 'sex' | 'birthdate'>, kg: number
   return { kg, sex: profile.sex ?? 'male', age: profile.birthdate ? ageFromBirthdate(profile.birthdate) : 30 }
 }
 
-export async function latestWeight(profile: Profile, day: string): Promise<number> {
+/** Peso de referencia: media de los últimos 7 pesajes hasta ese día; si no hay, el del perfil */
+export async function weightRef(profile: { weight_kg?: number | null }, day: string): Promise<{ kg: number; weighings: number }> {
   const { data } = await supabase.from('weights').select('kg').lte('day', day).order('day', { ascending: false }).limit(7)
-  if (data && data.length) return data.reduce((a, r) => a + Number(r.kg), 0) / data.length
-  return Number(profile.weight_kg ?? 70)
+  if (data && data.length) return { kg: data.reduce((a, r) => a + Number(r.kg), 0) / data.length, weighings: data.length }
+  return { kg: Number(profile.weight_kg ?? 70), weighings: 0 }
 }
 
-async function latestBodyFat(day: string): Promise<number | null> {
+export async function latestWeight(profile: Profile, day: string): Promise<number> {
+  return (await weightRef(profile, day)).kg
+}
+
+/** Último % de grasa de los 60 días anteriores (el que usa Katch-McArdle) */
+export async function latestBodyFat(day: string): Promise<{ pct: number; day: string } | null> {
   const since = addDays(day, -60)
-  const { data } = await supabase.from('body_fat').select('pct').gte('day', since).lte('day', day)
+  const { data } = await supabase.from('body_fat').select('pct,day').gte('day', since).lte('day', day)
     .order('day', { ascending: false }).limit(1)
-  return data?.[0]?.pct != null ? Number(data[0].pct) : null
+  return data?.[0]?.pct != null ? { pct: Number(data[0].pct), day: data[0].day } : null
 }
 
 export async function computeDayEnergy(profile: Profile, day: string): Promise<DayEnergy> {
-  const kg = await latestWeight(profile, day)
+  const [{ kg }, bodyFat] = await Promise.all([weightRef(profile, day), latestBodyFat(day)])
   const age = profile.birthdate ? ageFromBirthdate(profile.birthdate) : 30
-  const base = bmr(profile.sex ?? 'male', kg, Number(profile.height_cm ?? 170), age, await latestBodyFat(day))
+  const detail = bmrDetail((profile.bmr_formula ?? 'auto') as BmrFormula, profile.sex ?? 'male', kg, Number(profile.height_cm ?? 170), age, bodyFat?.pct)
+  const base = detail.kcal
 
   const since = addDays(day, -13)
   const [{ data: steps }, { data: wos }] = await Promise.all([
@@ -106,7 +118,7 @@ export async function computeDayEnergy(profile: Profile, day: string): Promise<D
 
   const targets = macroTargets(tdee, Number(profile.deficit_kcal), kg, Number(profile.protein_g_kg), Number(profile.fat_g_kg))
   return {
-    ...targets, bmr: base, tdee, stepsKcal: sk(day), trainingKcal: tk(day), factorUsed, weightKg: kg,
+    ...targets, bmr: base, bmrFormula: detail.used, bmrFallback: detail.fallback, bodyFat, tdee, stepsKcal: sk(day), trainingKcal: tk(day), factorUsed, weightKg: kg,
     suggestedFactor: suggested,
   }
 }

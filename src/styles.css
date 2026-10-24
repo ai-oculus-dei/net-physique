@@ -393,3 +393,5 @@ input.switch:checked::after { transform: translateX(18px); background: var(--cya
 .meal-select-ico, .meal-select-chev { position: absolute; pointer-events: none; color: var(--cyan); }
 .meal-select-ico { left: 13px; }
 .meal-select-chev { right: 13px; }
+.bmr-source { padding: 8px 10px; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--line); margin-top: 8px; }
+.bmr-source b { color: var(--cyan); }

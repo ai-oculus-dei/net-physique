@@ -1,6 +1,8 @@
 import { Target, User, Zap } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
-import { ACTIVITY_FACTORS, ageFromBirthdate, bmr, macroTargets } from '../lib/formulas'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { ACTIVITY_FACTORS, BMR_FORMULA_NAME, ageFromBirthdate, bmrDetail, macroTargets, type BmrFormula } from '../lib/formulas'
+import { latestBodyFat, weightRef } from '../lib/energy'
+import { fmtDay, ymd } from '../lib/dates'
 import type { Profile } from '../lib/types'
 import { NumInput, Seg, r0 } from './ui'
 
@@ -17,6 +19,12 @@ const MODE_HELP: Record<string, string> = {
 }
 
 export type ProfileDraft = Partial<Profile>
+
+const FORMULA_HELP: Record<BmrFormula, string> = {
+  auto: 'Katch-McArdle si tienes un % de grasa de los últimos 60 días; si no, Mifflin-St Jeor.',
+  mifflin: 'Peso, altura, edad y sexo. No tiene en cuenta tu composición corporal.',
+  katch: 'Usa tu masa magra (peso sin grasa). Necesita un % de grasa reciente.',
+}
 
 /** Valores recomendados (iguales a los predeterminados de la base de datos) */
 const DEFAULTS = {
@@ -48,13 +56,24 @@ export default function ProfileForm({ initial, onSubmit, submitLabel, requireCha
   const set = <K extends keyof Profile>(k: K, v: Profile[K] | null) => setP((o) => ({ ...o, [k]: v }))
   const n = (k: keyof Profile) => (p[k] == null ? '' : String(p[k]))
 
+  // Mismos datos que usa Diet: media de los últimos pesajes y % de grasa de los últimos 60 días
+  const [ref, setRef] = useState<{ kg: number; weighings: number; bodyFat: { pct: number; day: string } | null } | null>(null)
+  useEffect(() => {
+    const today = ymd()
+    Promise.all([weightRef(initial, today), latestBodyFat(today)])
+      .then(([w, bf]) => setRef({ ...w, bodyFat: bf }))
+      .catch(() => setRef(null))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const preview = useMemo(() => {
     if (!p.weight_kg || !p.height_cm || !p.birthdate || !p.sex) return null
-    const b = bmr(p.sex, p.weight_kg, p.height_cm, ageFromBirthdate(p.birthdate))
+    const kg = ref?.weighings ? ref.kg : p.weight_kg
+    const d = bmrDetail((p.bmr_formula ?? 'auto') as BmrFormula, p.sex, kg, p.height_cm, ageFromBirthdate(p.birthdate), ref?.bodyFat?.pct)
     const f = p.energy_mode === 'factor' || p.energy_mode === 'adaptive'
       ? Number(p.activity_factor ?? ACTIVITY_FACTORS[(p.activity_level ?? 2) - 1]) : 1.2
-    return { bmr: b, ...macroTargets(b * f, Number(p.deficit_kcal ?? 0), p.weight_kg, Number(p.protein_g_kg), Number(p.fat_g_kg)) }
-  }, [p])
+    return { bmr: d.kcal, detail: d, kg, ...macroTargets(d.kcal * f, Number(p.deficit_kcal ?? 0), kg, Number(p.protein_g_kg), Number(p.fat_g_kg)) }
+  }, [p, ref])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -102,6 +121,12 @@ export default function ProfileForm({ initial, onSubmit, submitLabel, requireCha
           <Seg variant="full" value={p.energy_mode ?? 'adaptive'} onChange={(v) => set('energy_mode', v)} options={MODES.map((m) => ({ ...m }))} />
           <span className="small faint">{MODE_HELP[p.energy_mode ?? 'adaptive']}</span>
         </div>
+        <div className="stack" style={{ gap: 6 }}>
+          <span className="small muted">Fórmula del metabolismo basal</span>
+          <Seg variant="full" value={(p.bmr_formula ?? 'auto') as BmrFormula} onChange={(v) => set('bmr_formula', v)}
+            options={[{ id: 'auto', label: 'Automática' }, { id: 'mifflin', label: 'Mifflin' }, { id: 'katch', label: 'Katch' }]} />
+          <span className="small faint">{FORMULA_HELP[(p.bmr_formula ?? 'auto') as BmrFormula]}</span>
+        </div>
         {p.energy_mode !== 'dynamic' && (
           <label className="field"><span>Factor actual</span>
             <NumInput value={p.activity_factor} fallback={ACTIVITY_FACTORS[(p.activity_level ?? 2) - 1]}
@@ -136,11 +161,24 @@ export default function ProfileForm({ initial, onSubmit, submitLabel, requireCha
           </label>
         </div>
         {preview && (
-          <div className="grid3" style={{ marginTop: 4 }}>
-            <div className="kpi"><span className="v">{r0(preview.bmr)}</span><span className="l">Basal</span></div>
-            <div className="kpi"><span className="v" style={{ color: 'var(--cyan)' }}>{r0(preview.kcal)}</span><span className="l">kcal objetivo</span></div>
-            <div className="kpi"><span className="v small mono">{r0(preview.protein)}P · {r0(preview.carbs)}C · {r0(preview.fat)}G</span><span className="l">Macros (g)</span></div>
-          </div>
+          <>
+            <div className="grid3" style={{ marginTop: 4 }}>
+              <div className="kpi"><span className="v">{r0(preview.bmr)}</span><span className="l">Basal</span></div>
+              <div className="kpi"><span className="v" style={{ color: 'var(--cyan)' }}>{r0(preview.kcal)}</span><span className="l">kcal objetivo</span></div>
+              <div className="kpi"><span className="v small mono">{r0(preview.protein)}P · {r0(preview.carbs)}C · {r0(preview.fat)}G</span><span className="l">Macros (g)</span></div>
+            </div>
+            <div className="bmr-source small">
+              <b>{BMR_FORMULA_NAME[preview.detail.used]}</b>
+              {preview.detail.used === 'katch' && ref?.bodyFat && (
+                <span className="muted"> · {ref.bodyFat.pct} % de grasa del {fmtDay(ref.bodyFat.day, { day: 'numeric', month: 'short' })}</span>
+              )}
+              <span className="muted"> · peso {ref?.weighings ? `media de ${ref.weighings} pesajes (${Math.round(preview.kg * 10) / 10} kg)` : 'del perfil'}</span>
+              {preview.detail.fallback && (
+                <div className="warn" style={{ marginTop: 4 }}>Katch-McArdle necesita un % de grasa de los últimos 60 días: mientras tanto se usa Mifflin-St Jeor.</div>
+              )}
+              {p.energy_mode === 'dynamic' && <div className="faint" style={{ marginTop: 4 }}>En modo dinámico el objetivo de cada día suma además los pasos y el entreno.</div>}
+            </div>
+          </>
         )}
       </div>
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  activityFactor, adaptiveFactor, bmrKatch, bmrMifflin, epley1rm, macroTargets,
+  activityFactor, adaptiveFactor, bmrDetail, bmrKatch, bmrMifflin, epley1rm, macroTargets,
   metKcal, navyBodyFat, siri, skinfoldBodyFat, stepsKcal,
 } from './formulas'
 
@@ -55,4 +55,22 @@ describe('composición corporal', () => {
     expect(v).toBeLessThan(28)
   })
   it('Epley', () => expect(epley1rm(100, 5)).toBeCloseTo(116.67, 1))
+})
+
+describe('fórmula del basal elegible', () => {
+  // tu caso: 179 cm, 29 años, 90.23 kg, 18.1 % de grasa
+  const args = ['male', 90.23, 179, 29] as const
+  it('auto: Katch-McArdle si hay % de grasa, si no Mifflin', () => {
+    expect(bmrDetail('auto', ...args, 18.1)).toMatchObject({ used: 'katch', fallback: false })
+    expect(bmrDetail('auto', ...args, 18.1).kcal).toBeCloseTo(370 + 21.6 * 90.23 * (1 - 0.181), 5)
+    expect(bmrDetail('auto', ...args, null)).toMatchObject({ used: 'mifflin', fallback: false })
+  })
+  it('mifflin: siempre Mifflin aunque haya % de grasa', () => {
+    expect(bmrDetail('mifflin', ...args, 18.1)).toMatchObject({ used: 'mifflin', fallback: false })
+    expect(bmrDetail('mifflin', ...args, 18.1).kcal).toBeCloseTo(bmrMifflin(...args), 5)
+  })
+  it('katch sin % de grasa → Mifflin con aviso (fallback)', () => {
+    expect(bmrDetail('katch', ...args, null)).toMatchObject({ used: 'mifflin', fallback: true })
+    expect(bmrDetail('katch', ...args, 80)).toMatchObject({ used: 'mifflin', fallback: true }) // % no válido
+  })
 })

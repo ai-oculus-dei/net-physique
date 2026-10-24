@@ -33,6 +33,8 @@ export interface Profile {
   /** avisos (se desactivan en Ajustes) */
   remind_weight?: boolean
   remind_bodyfat?: boolean
+  /** fórmula del basal: automática, Mifflin-St Jeor o Katch-McArdle */
+  bmr_formula?: 'auto' | 'mifflin' | 'katch'
 }
 
 export interface Product {
