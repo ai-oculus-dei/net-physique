@@ -17,6 +17,9 @@ export function baseOption(): EChartsCoreOption {
   const muted = cssVar('--muted'), line = cssVar('--line')
   return {
     backgroundColor: 'transparent',
+    // Sin animación de entrada: en Safari iOS las máscaras (clipPath SVG) con las que ECharts anima
+    // las líneas se mezclan entre series y la tendencia/media acaban borradas al dibujar los puntos
+    animation: false,
     textStyle: { fontFamily: 'JetBrains Mono, monospace', color: muted },
     grid: { left: 36, right: 12, top: 16, bottom: 26 },
     tooltip: {
@@ -43,7 +46,8 @@ export default function EChart({ option, height = 220 }: { option: EChartsCoreOp
     // redibuja con el tamaño real (y con la opción pendiente si la había)
     const redraw = () => {
       if (!hasSize() || c.isDisposed()) return
-      c.resize()
+      // solo si el tamaño ha cambiado de verdad (un resize a mitad de dibujo puede dejar series a medias)
+      if (c.getWidth() !== el.clientWidth || c.getHeight() !== el.clientHeight) c.resize()
       if (pending.current) { c.setOption(pending.current, true); pending.current = null }
     }
     let last = `${el.clientWidth}x${el.clientHeight}`
@@ -65,8 +69,9 @@ export default function EChart({ option, height = 220 }: { option: EChartsCoreOp
     const el = ref.current
     if (!c || !el) return
     if (el.clientWidth > 0 && el.clientHeight > 0) {
+      // solo se reescala si el tamaño del gráfico no coincide con el del contenedor
+      if (c.getWidth() !== el.clientWidth || c.getHeight() !== el.clientHeight) c.resize()
       c.setOption(option, true)
-      c.resize()
     } else {
       pending.current = option
     }
