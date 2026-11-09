@@ -32,12 +32,44 @@ export default function EChart({ option, height = 220 }: { option: EChartsCoreOp
   const ref = useRef<HTMLDivElement>(null)
   const chart = useRef<echarts.ECharts | null>(null)
   const theme = useApp((s) => s.theme)
+  // última opción pedida: si el contenedor aún no tiene tamaño se aplica cuando lo tenga
+  const pending = useRef<EChartsCoreOption | null>(null)
+
   useEffect(() => {
-    chart.current = echarts.init(ref.current!, undefined, { renderer: 'svg' })
-    const ro = new ResizeObserver(() => chart.current?.resize())
-    ro.observe(ref.current!)
-    return () => { ro.disconnect(); chart.current?.dispose() }
+    const el = ref.current!
+    const c = echarts.init(el, undefined, { renderer: 'svg' })
+    chart.current = c
+    const hasSize = () => el.clientWidth > 0 && el.clientHeight > 0
+    // redibuja con el tamaño real (y con la opción pendiente si la había)
+    const redraw = () => {
+      if (!hasSize() || c.isDisposed()) return
+      c.resize()
+      if (pending.current) { c.setOption(pending.current, true); pending.current = null }
+    }
+    let last = `${el.clientWidth}x${el.clientHeight}`
+    const ro = new ResizeObserver(() => {
+      const now = `${el.clientWidth}x${el.clientHeight}`
+      if (now === last) return
+      last = now
+      redraw()
+    })
+    ro.observe(el)
+    // En iOS el tamaño definitivo llega tras el primer pintado y al cargar las fuentes
+    const raf = requestAnimationFrame(() => requestAnimationFrame(redraw))
+    document.fonts?.ready.then(redraw).catch(() => {})
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); c.dispose(); chart.current = null }
   }, [])
-  useEffect(() => { chart.current?.setOption(option, true) }, [option, theme])
+
+  useEffect(() => {
+    const c = chart.current
+    const el = ref.current
+    if (!c || !el) return
+    if (el.clientWidth > 0 && el.clientHeight > 0) {
+      c.setOption(option, true)
+      c.resize()
+    } else {
+      pending.current = option
+    }
+  }, [option, theme])
   return <div ref={ref} style={{ width: '100%', height }} />
 }
